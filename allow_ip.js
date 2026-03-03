@@ -11,18 +11,18 @@ const pool = new Pool({
 
 async function addIPs() {
     try {
-        console.log("Adding 192.168.0.x subnet IPs to dashboard allowlist...");
+        const ip = process.argv[2] || "192.168.0.134";
+        const desc = process.argv[3] || "Whitelisted IP";
+        console.log(`Adding ${ip} to dashboard allowlist...`);
 
-        // Add explicitly known remote IPs
         await pool.query(
             "INSERT INTO settings_ip_allowlist (ip_address, description) VALUES ($1, $2) ON CONFLICT (ip_address) DO UPDATE SET description = EXCLUDED.description",
-            ["192.168.0.134", "Main computer"]
+            [ip, desc]
         );
 
-        // Sometimes it shows as IPv4-mapped IPv6 depending on network config
         await pool.query(
             "INSERT INTO settings_ip_allowlist (ip_address, description) VALUES ($1, $2) ON CONFLICT (ip_address) DO UPDATE SET description = EXCLUDED.description",
-            ["::ffff:192.168.0.134", "Main computer mapped"]
+            ["::ffff:" + ip, desc + " mapped"]
         );
 
         console.log("Success! Added to database.");
