@@ -60,10 +60,7 @@ function sendQbCommand(action, payload = {}) {
             const bodyData = JSON.stringify({ action, ...payload });
             try {
                 const u = new URL(QB_BRIDGE_URL);
-                let localAddress = null;
-                if (!u.hostname.startsWith('100.')) {
-                    localAddress = getLocalIpForTarget(QB_BRIDGE_URL);
-                }
+                const localAddress = getLocalIpForTarget(QB_BRIDGE_URL);
 
                 const options = {
                     hostname: u.hostname,
