@@ -676,7 +676,7 @@ async function loadEmployeeDetails(hotel, employee) {
   // Apply: We take the maximum of (Base - Deductions) OR (Regular additions)
   // This ensures that if QB is lagging behind recent manual additions, we show at least the manual additions.
   // But if QB has already synced them, we don't double count.
-  const adjustedBereavHrs = Math.max(berAdditionHours, baseBerHrs - berDeductionHours);
+  const adjustedBereavHrs = Math.max(berAdditionHours, bereavHrs - berDeductionHours);
 
   const bereavAmt = (cb.bereavement_used_amount != null) ? Number(cb.bereavement_used_amount) : 0;
 
