@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Employee Time Off Tracking</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <header class="topBand">
+    <div class="topBand-inner">
+      <div class="brandBlock">
+        <div class="appVersion">v1.3.48</div>
+        <div class="brandTitle">Employee Time Off Tracking</div>
+        <div class="brandSubtitle">Software version: v1.4.0</div>
+      </div>
+      <div style="flex:1;"></div>
+      <div class="userControls" style="display:none; align-items:center; gap:10px;">
+        <span id="currentUserDisplay" style="color:rgba(255,255,255,0.9); font-weight:600; font-size:13px;"></span>
+        <button id="logoutBtn" class="btnDangerSmall"
+          style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.2); color:white;">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="navTabs" role="tablist" aria-label="Main navigation">
+    <div class="navTabs-inner">
+      <button class="navTab active" id="tabImport" type="button">Import</button>
+      <button class="navTab" id="tab2" type="button">Employee Details</button>
+      <button class="navTab" id="tab3" type="button">Input Entry</button>
+      <button class="navTab" id="tab4" type="button">Settings</button>
+      <button class="navTab" id="tabReports" type="button">Reports</button>
+      <button class="navTab" id="tabUsers" type="button" style="display:none;">Users</button>
+      <button class="navTab" id="globalRefreshBtn" type="button" style="margin-left:auto; margin-right:8px;">↻
+        Refresh</button>
+      <div class="navTabs-spacer" style="flex:0;"></div>
+      <button class="navTab ghost" id="btnMore" type="button">More ▾</button>
+    </div>
+  </nav>
+
+  <main class="pageWrap">
+
+    <div class="dashboard-layout" style="display:flex; flex-direction:row; align-items:start; gap:20px;">
+      <div class="content-body" style="flex:1; min-width:0;">
+
+        <!-- TAB 1 -->
+        <section id="pageImport" class="page">
+          <div class="pageHeader">
+            <h1 class="pageTitle">Import</h1>
+          </div>
+
+          <div class="card" style="border-left: 4px solid #2db34a;">
+            <div class="cardHead">
+              <h2 style="color:#2db34a">Import from QuickBooks Desktop</h2>
+              <div class="muted">Directly connect to QuickBooks Desktop to sync employees and payroll data.</div>
+            </div>
+            <div class="cardBody">
+              <div class="field" style="margin-bottom:12px; max-width:400px;">
+                <label>Sync for Hotel</label>
+                <select id="importHotel">
+                  <option value="">Select hotel...</option>
+                </select>
+              </div>
+              <div class="actions rowInline">
+                <button id="qbConnectBtn" class="btn">Test Connection</button>
+                <button id="qbSyncBtn" class="btnPrimary">Sync Employees</button>
+                <span id="qbStatus" class="status" style="margin-left:10px;"></span>
+              </div>
+              <div id="qbOutput"
+                style="margin-top:10px; font-family:monospace; font-size:12px; white-space:pre-wrap; max-height:100px; overflow:auto; background:#f9f9f9; padding:5px; border:1px solid #eee; display:none;">
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardHead rowBetween">
+              <div>
+                <h2>Sync History</h2>
+                <div class="muted">Recent QuickBooks Desktop sync activities.</div>
+              </div>
+              <button id="refreshSyncHistoryBtn" class="btn">Refresh</button>
+            </div>
+
+            <div class="tableWrap">
+              <table class="table" id="syncHistoryTable">
+                <thead>
+                  <tr>
+                    <th>Date & Time</th>
+                    <th>Username</th>
+                    <th>Status</th>
+                    <th>Hotel</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2 -->
+        <section id="pageTab2" class="page hidden">
+          <div class="pageHeader">
+            <h1 class="pageTitle">Employee Details</h1>
+          </div>
+
+          <div class="card">
+            <div class="cardHead">
+              <h2>Select Hotel + Employee</h2>
+              <div class="muted">When you choose an employee, details will appear below.</div>
+            </div>
+
+            <div class="grid2">
+              <div class="field">
+                <label>Hotel</label>
+                <select id="tab2Hotel">
+                  <option value="">Select hotel...</option>
+                  <option value="Holiday Inn & Suites -2565 Argentia">Holiday Inn & Suites -2565 Argentia</option>
+                  <option value="Holiday Inn Express & Suites - 5599 Ambler">Holiday Inn Express & Suites - 5599 Ambler
+                  </option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Employee</label>
+                <select id="tab2Employee" disabled>
+                  <option value="">Select employee...</option>
+                </select>
+                <div class="hint" id="tab2Hint">Select a hotel to load employees.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardHead">
+              <h2>Details</h2>
+              <div class="muted" id="detailsSub">Choose hotel + employee.</div>
+            </div>
+            <div id="employeeDetailsWrap" class="tableWrap"></div>
+          </div>
+
+        </section>
+
+        <!-- TAB 3 -->
+        <section id="pageEntry" class="page hidden">
+          <div class="pageHeader">
+            <h1 class="pageTitle">Input Entry</h1>
+          </div>
+
+          <div class="card">
+            <div class="cardHead">
+              <h2>Add Manual Entry</h2>
+              <div class="muted">Use this for adjustments or manual time-off entries. Imports remain one-way from
+                QuickBooks.</div>
+            </div>
+
+            <div class="grid2">
+              <div class="field">
+                <label>Hotel</label>
+                <select id="entryHotel">
+                  <option value="">Select hotel...</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Employee</label>
+                <select id="entryEmployee" disabled>
+                  <option value="">Select employee...</option>
+                </select>
+                <div class="hint" id="entryHint">Select a hotel to load employees.</div>
+              </div>
+            </div>
+
+            <div class="grid3" style="margin-top: 12px;">
+              <div class="field">
+                <label>From date</label>
+                <input id="entryFrom" type="date" />
+              </div>
+              <div class="field">
+                <label>To date</label>
+                <input id="entryTo" type="date" />
+              </div>
+              <div class="field">
+                <label>Allocated Year</label>
+                <div style="display:flex; gap:10px; align-items:center;">
+                  <label
+                    style="font-weight:normal; font-size:0.9em; display:flex; align-items:center; gap:5px; margin:0;">
+                    <input type="checkbox" id="entryUseAllocatedYear" style="width:auto; margin:0;" /> Override Year
+                  </label>
+                  <input id="entryAllocatedYear" type="number" placeholder="YYYY" style="width:100px; display:none;" />
+                </div>
+              </div>
+              <div class="field">
+                <label># of days</label>
+                <div style="display:flex; flex-direction:column;">
+                  <input id="entryDays" type="number" step="0.25" placeholder="Auto if dates set" />
+                  <label
+                    style="font-weight:normal; margin-top:6px; font-size:0.9em; display:flex; flex-direction:row; align-items:center; justify-content:flex-start; gap:6px; cursor:pointer; white-space:nowrap;">
+                    <input type="checkbox" id="entryIncludeWeekends"
+                      style="margin:0; width:auto; display:inline-block;"> Include Sat/Sun
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid3" style="margin-top: 12px;">
+
+
+              <div class="field">
+                <label>Type</label>
+                <select id="entryType">
+                  <option value="">Select type...</option>
+                </select>
+              </div>
+
+              <div class="field" style="grid-column: span 2;">
+                <label>Note (optional)</label>
+                <textarea id="entryNote" rows="4" placeholder="Optional note..."></textarea>
+              </div>
+
+              <div class="actions">
+                <button id="saveEntryBtn" class="btnPrimary">Save Entry</button>
+                <div id="entryStatus" class="status"></div>
+              </div>
+            </div>
+
+            <!-- History Section -->
+            <div class="card" style="margin-top:20px;">
+              <div class="cardHead">
+                <h2>Entry History</h2>
+                <div class="muted">Recent manual entries for this employee.</div>
+              </div>
+              <div class="tableWrap">
+                <table class="table" id="entryHistoryTable">
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>Role</th>
+                      <th>Name</th>
+                      <th>Blocked Access</th>
+                      <th>Created</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td colspan="5" class="muted">Select an employee to view history.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+        </section>
+
+        <!-- TAB 4 -->
+        <section id="pageSettings" class="page hidden">
+          <div class="pageHeader">
+            <h1 class="pageTitle">Settings</h1>
+          </div>
+
+          <div class="card">
+            <div class="cardHead">
+              <h2>Manage Dropdown Options</h2>
+              <div class="muted">You can add/rename/delete Hotels, Years, and Types. If an item is already used, it
+                cannot
+                be deleted or renamed.</div>
+            </div>
+
+            <div class="grid3">
+              <div class="card" style="box-shadow:none;border:1px solid rgba(0,0,0,0.06);">
+                <h3 style="margin:0 0 10px 0;">Hotels</h3>
+                <div class="field">
+                  <label>Add hotel</label>
+                  <div class="rowInline">
+                    <input id="newHotel" type="text" placeholder="Hotel name..." />
+                    <button id="addHotelBtn" class="btn">Add</button>
+                  </div>
+                </div>
+                <div id="hotelsList" class="listBox"></div>
+              </div>
+
+              <div class="card" style="box-shadow:none;border:1px solid rgba(0,0,0,0.06);">
+                <h3 style="margin:0 0 10px 0;">Years</h3>
+                <div class="field">
+                  <label>Add year</label>
+                  <div class="rowInline">
+                    <input id="newYear" type="number" placeholder="2025" />
+                    <button id="addYearBtn" class="btn">Add</button>
+                  </div>
+                </div>
+                <div id="yearsList" class="listBox"></div>
+              </div>
+
+              <div class="card" style="box-shadow:none;border:1px solid rgba(0,0,0,0.06);">
+                <div class="rowBetween" style="margin-bottom:10px;">
+                  <h3 style="margin:0;">Types</h3>
+                  <select id="settingsTypesHotel" style="width:160px; padding:2px;">
+                    <option value="">Select hotel...</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Add type</label>
+                  <div class="rowInline">
+                    <input id="newType" type="text" placeholder="Vacation / Sick / Personal..." />
+                    <input id="newTypeMin" type="number" placeholder="Min" style="width:70px; margin-left:8px;" />
+                    <input id="newTypeMax" type="number" placeholder="Max" style="width:70px; margin-left:8px;" />
+                    <button id="addTypeBtn" class="btn">Add</button>
+                  </div>
+                </div>
+                <div id="typesList" class="listBox"></div>
+              </div>
+            </div>
+
+            <!-- Opening Balances Manager -->
+            <div class="card" style="margin-top:20px;">
+              <div class="cardHead">
+                <h2>Opening Balances</h2>
+                <div class="muted">Manage starting balances for Vacation and Sick pay.</div>
+              </div>
+
+              <div class="field" style="max-width:400px; margin-bottom:12px;">
+                <label>Hotel</label>
+                <select id="settingsOpeningHotel">
+                  <option value="">Select hotel...</option>
+                </select>
+              </div>
+
+              <div class="tableWrap">
+                <table class="table" id="openingBalancesTable">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th class="num">Vac<br>Amount ($)</th>
+                      <th class="num">Vac<br>Hours</th>
+                      <th class="num">Vac Days<br>Allowed</th>
+                      <th class="num">Sick<br>Amount ($)</th>
+                      <th class="num">Sick<br>Hours</th>
+                      <th style="width:80px">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td colspan="6" class="muted">Select a hotel.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="settingsStatus" class="status" style="margin-top:12px;"></div>
+          </div>
+
+
+
+          <!-- Security (Allowed IPs) -->
+          <div class="card" style="margin-top:20px;">
+            <div class="cardHead">
+              <h2>Security & Access</h2>
+              <div class="muted">Restrict access to specific IP addresses. If empty, all IPs are blocked except
+                localhost.
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Allowed Payloads (Safe IP Addresses)</label>
+              <div class="rowInline">
+                <input id="newIP" type="text" placeholder="e.g. 192.168.0.100" style="width:200px;" />
+                <input id="newIPDesc" type="text" placeholder="Description (e.g. Office PC)"
+                  style="width:200px;margin-left:8px;" />
+                <button id="addIPBtn" class="btn">Add IP</button>
+                <button id="addMyIPBtn" class="btnSecondary" style="margin-left:auto;">+ Add Current Device</button>
+              </div>
+            </div>
+
+            <div class="tableWrap" style="margin-top:12px;">
+              <table class="table" id="ipTable">
+                <thead>
+                  <tr>
+                    <th>IP Address</th>
+                    <th>Description</th>
+                    <th>Added At</th>
+                    <th style="width:80px">Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div id="ipStatus" class="status"></div>
+          </div>
+
+          <!-- Active Sessions Card -->
+          <div class="card" style="margin-top:20px;">
+            <div class="cardHead">
+              <h2>Active Sessions</h2>
+              <div class="muted">Users who are currently logged in (past 24h).</div>
+            </div>
+            <div class="tableWrap">
+              <table id="sessionsTable" class="table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>IP Address</th>
+                    <th>User Agent (Browser)</th>
+                    <th>Login Time</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="actions" style="margin-top:8px;">
+              <button class="btn" style="font-size:12px;" onclick="loadSessions()">Refresh List</button>
+            </div>
+          </div>
+
+          <!-- Maintenance Mode Card -->
+          <div class="card" style="margin-top:20px; border-left: 4px solid #f39c12;">
+            <div class="cardHead">
+              <h2>Maintenance Mode</h2>
+              <div class="muted">Block all users except 'admin'. Display "Under Maintenance" message.</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="maintenanceToggle">
+              <span class="slider"></span>
+              <span class="label-text">Enable Maintenance Mode</span>
+            </label>
+          </div>
+        </section>
+
+        <section id="pageReports" class="page hidden">
+          <div class="pageHeader">
+            <h1 class="pageTitle">Reports</h1>
+          </div>
+
+          <div class="card">
+            <div class="cardHead">
+              <h2>Summary</h2>
+              <div class="muted">Vac/Sick “Taken” totals come from manual entries only.</div>
+            </div>
+
+            <div class="grid2">
+              <div class="field">
+                <label>Report Type</label>
+                <select id="reportsType">
+                  <option value="summary">Vac/Sick/Brev Report</option>
+                  <option value="details">Employee Details</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Year</label>
+                <select id="reportsYear">
+                  <option value="">All</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Hotel</label>
+                <select id="reportsHotel">
+                  <option value="">Select hotel...</option>
+                </select>
+              </div>
+              <div class="field" style="display:flex;align-items:flex-end;">
+                <button id="reportsRunBtn" class="btnPrimary">Run Report</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:14px;">
+            <div class="cardHead rowBetween">
+              <h2>Employees</h2>
+              <div class="rowInline">
+                <button id="exportXlsBtn" class="btn" style="font-size:12px;">Export Excel</button>
+                <button id="exportCsvBtn" class="btn" style="font-size:12px;">Export CSV</button>
+                <button id="exportPdfBtn" class="btn" style="font-size:12px;">Export PDF</button>
+                <button id="reportsRefreshBtn" class="btn" style="margin-left:8px;">Refresh</button>
+              </div>
+            </div>
+
+            <div class="tableWrap">
+              <table class="table" id="reportsTable">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th class="num">Accrued Vac Days</th>
+                    <th class="num">Vac Days Taken</th>
+                    <th class="num">Sick Days Taken</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div id="reportsStatus" class="status"></div>
+          </div>
+        </section>
+
+        <!-- TAB USERS -->
+        <section id="pageUsers" class="page hidden">
+          <div class="pageHeader">
+            <h1 class="pageTitle">User Management</h1>
+            <button id="addUserBtn" class="btnPrimary">+ Add User</button>
+          </div>
+          <div class="card">
+            <div class="tableWrap">
+              <table class="table" id="usersTable">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Name</th>
+                    <th>Blocked Access</th>
+                    <th>Created</th>
+                    <th style="width:100px;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- Edit Opening Balance Modal -->
+        <div class="modalOverlay" id="editModalOverlay">
+          <div class="modalBox">
+            <div class="modalHeader">
+              <h2 class="modalTitle">Edit Opening Balance</h2>
+              <button class="modalClose" id="modalCloseBtn">&times;</button>
+            </div>
+            <div class="modalBody">
+              <div class="formGrid">
+                <div class="field">
+                  <label>Vacation Amount ($)</label>
+                  <input type="number" id="editVacAmt" step="0.01">
+                </div>
+                <div class="field">
+                  <label>Vacation Hours</label>
+                  <input type="number" id="editVacHrs" step="0.01">
+                </div>
+                <div class="field formFull">
+                  <label>Vacation Days Allowed</label>
+                  <input type="number" id="editVacAllowed" step="0.01">
+                </div>
+                <div class="field">
+                  <label>Sick Amount ($)</label>
+                  <input type="number" id="editSickAmt" step="0.01">
+                </div>
+                <div class="field">
+                  <label>Sick Hours</label>
+                  <input type="number" id="editSickHrs" step="0.01">
+                </div>
+              </div>
+            </div>
+            <div class="modalFooter">
+              <button class="btn" id="modalCancelBtn">Cancel</button>
+              <button class="btnPrimary" id="modalSaveBtn">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit Manual Entry Modal (New) -->
+        <div class="modalOverlay" id="editEntryModalOverlay">
+          <div class="modalBox">
+            <div class="modalHeader">
+              <h2 class="modalTitle">Edit Manual Entry</h2>
+              <button class="modalClose" id="editEntryModalClose">&times;</button>
+            </div>
+            <div class="modalBody">
+              <input type="hidden" id="editEntryId">
+              <div class="formGrid">
+                <div class="field">
+                  <label>From Date</label>
+                  <input type="date" id="editEntryFrom">
+                </div>
+                <div class="field">
+                  <label>To Date</label>
+                  <input type="date" id="editEntryTo">
+                </div>
+                <div class="field">
+                  <label>Type</label>
+                  <select id="editEntryType">
+                    <!-- Options populated via JS or static if simple -->
+                    <option value="Vacation">Vacation</option>
+                    <option value="Sick">Sick</option>
+                    <option value="Bereavement">Bereavement</option>
+                    <option value="Unpaid">Unpaid</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Days</label>
+                  <div style="display:flex; flex-direction:column;">
+                    <input type="number" step="0.25" id="editEntryDays">
+                    <label
+                      style="font-weight:normal; margin-top:6px; font-size:0.9em; display:flex; flex-direction:row; align-items:center; justify-content:flex-start; gap:6px; cursor:pointer; white-space:nowrap;">
+                      <input type="checkbox" id="editEntryIncludeWeekends"
+                        style="margin:0; width:auto; display:inline-block;"> Include Sat/Sun
+                    </label>
+                  </div>
+                </div>
+                <div class="field formFull">
+                  <label>Allocated Year</label>
+                  <div style="display:flex; gap:10px; align-items:center;">
+                    <label style="font-weight:normal; margin:0; display:flex; align-items:center; gap:5px;">
+                      <input type="checkbox" id="editEntryUseAllocated" style="width:auto; margin:0;"> Override Year
+                    </label>
+                    <input type="number" id="editEntryAllocatedYear" placeholder="YYYY"
+                      style="width:100px; display:none;">
+                  </div>
+                </div>
+                <div class="field formFull">
+                  <label>Note</label>
+                  <textarea id="editEntryNote" rows="3"></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="modalFooter">
+              <button class="btn" id="editEntryCancelBtn">Cancel</button>
+              <button class="btnDanger" id="editEntryDeleteBtn" style="margin-right:auto;">Delete Entry</button>
+              <button class="btnPrimary" id="editEntrySaveBtn">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Edit Modal -->
+        <div class="modalOverlay" id="userModalOverlay">
+          <div class="modalBox">
+            <div class="modalHeader">
+              <h2 class="modalTitle" id="userModalTitle">Add User</h2>
+              <button class="modalClose" id="userModalClose">&times;</button>
+            </div>
+            <div class="modalBody">
+              <input type="hidden" id="userId">
+              <div class="formGrid">
+                <div class="field">
+                  <label>Username</label>
+                  <input type="text" id="userUsername">
+                </div>
+                <div class="field">
+                  <label>Role</label>
+                  <select id="userRole">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>First Name</label>
+                  <input type="text" id="userFirstName">
+                </div>
+                <div class="field">
+                  <label>Last Name</label>
+                  <input type="text" id="userLastName">
+                </div>
+                <div class="field formFull">
+                  <label>Password <span id="pwdHint" class="hint" style="display:none; font-weight:normal;">(Leave blank
+                      to
+                      keep unchanged)</span></label>
+                  <input type="password" id="userPassword">
+                </div>
+              </div>
+            </div>
+            <div class="modalFooter">
+              <button class="btn" id="userModalCancel">Cancel</button>
+              <button class="btnPrimary" id="userModalSave">Save User</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Note Modal -->
+        <div class="modalOverlay" id="noteModalOverlay">
+          <div class="modalBox">
+            <div class="modalHeader">
+              <h2 class="modalTitle" id="noteModalTitle">Add Note</h2>
+              <button class="modalClose" id="noteModalClose">&times;</button>
+            </div>
+            <div class="modalBody">
+              <input type="hidden" id="noteId">
+              <input type="hidden" id="noteHotel">
+              <input type="hidden" id="noteEmployee">
+              <div class="formGrid">
+                <div class="field formFull">
+                  <label>Note Content</label>
+                  <textarea id="noteContent" rows="6" placeholder="Enter note details here..."></textarea>
+                </div>
+                <!-- Attachment Field -->
+                <div class="field formFull">
+                  <label>Attachment (Image/PDF)</label>
+                  <input type="file" id="noteAttachment" accept="image/*,.pdf">
+                </div>
+              </div>
+            </div>
+            <div class="modalFooter">
+              <button class="btn" id="noteModalCancel">Cancel</button>
+              <button class="btnPrimary" id="noteModalSave">Save Note</button>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- End content-body -->
+
+      <!-- Global Warning Sidebar -->
+      <div class="card" id="warningSidebar"
+        style="border: 2px solid #d32f2f; background:#fff5f5; min-height:800px; width:260px; flex-shrink:0; position:sticky; top:20px; margin-top:54px; align-self:start; z-index:100;">
+        <h3 style="color:#c62828; border-bottom:1px solid #ffcdd2; padding-bottom:8px; margin-top:0;">Notifications</h3>
+        <div id="warningList" style="font-size:0.9rem; color:#b71c1c;">
+          <div style="color:#666;">Waiting for check...</div>
+        </div>
+      </div>
+
+    </div> <!-- End dashboard-layout -->
+
+  </main>
+  <script src="app.js?v=2"></script>
+</body>
+
+</html>

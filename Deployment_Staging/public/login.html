@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Login - HR System</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: var(--bg);
+        }
+
+        .loginBox {
+            background: white;
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .loginHeader {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .loginTitle {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--blueDarker);
+        }
+
+        .loginSubtitle {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .loginError {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--danger);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="loginBox">
+        <div class="loginHeader">
+            <div class="loginTitle">HR System</div>
+            <div class="loginSubtitle">Please sign in to continue</div>
+        </div>
+
+        <div id="loginError" class="loginError"></div>
+
+        <form id="loginForm">
+            <div class="field">
+                <label>Username</label>
+                <input type="text" id="username" required autofocus>
+            </div>
+            <div class="field" style="margin-top:16px;">
+                <label>Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <div class="field" style="margin-top:24px;">
+                <button type="submit" class="btnPrimary" style="width:100%; justify-content:center;">Sign In</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById("loginForm");
+        const errBox = document.getElementById("loginError");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            errBox.style.display = "none";
+            const u = document.getElementById("username").value;
+            const p = document.getElementById("password").value;
+
+            try {
+                const r = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const json = await r.json();
+
+                if (json.ok) {
+                    window.location.href = "/";
+                } else {
+                    errBox.textContent = json.error || "Login failed";
+                    errBox.style.display = "block";
+                }
+            } catch (err) {
+                errBox.textContent = "Connection error";
+                errBox.style.display = "block";
+            }
+        });
+
+        // Check if identifying as logged in (redirect loop prevention)
+        fetch("/api/auth/me").then(r => r.json()).then(d => {
+            if (d.ok) window.location.href = "/";
+        }).catch(() => { });
+    </script>
+</body>
+
+</html>

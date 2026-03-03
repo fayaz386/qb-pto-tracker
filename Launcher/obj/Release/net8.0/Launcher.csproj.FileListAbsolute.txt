@@ -1,0 +1,14 @@
+C:\qb-pto-tracker\Launcher\bin\Release\net8.0\PTOTracker.exe
+C:\qb-pto-tracker\Launcher\bin\Release\net8.0\PTOTracker.deps.json
+C:\qb-pto-tracker\Launcher\bin\Release\net8.0\PTOTracker.runtimeconfig.json
+C:\qb-pto-tracker\Launcher\bin\Release\net8.0\PTOTracker.dll
+C:\qb-pto-tracker\Launcher\bin\Release\net8.0\PTOTracker.pdb
+C:\qb-pto-tracker\Launcher\obj\Release\net8.0\Launcher.GeneratedMSBuildEditorConfig.editorconfig
+C:\qb-pto-tracker\Launcher\obj\Release\net8.0\Launcher.AssemblyInfoInputs.cache
+C:\qb-pto-tracker\Launcher\obj\Release\net8.0\Launcher.AssemblyInfo.cs
+C:\qb-pto-tracker\Launcher\obj\Release\net8.0\Launcher.csproj.CoreCompileInputs.cache
+C:\qb-pto-tracker\Launcher\obj\Release\net8.0\PTOTracker.dll
+C:\qb-pto-tracker\Launcher\obj\Release\net8.0\refint\PTOTracker.dll
+C:\qb-pto-tracker\Launcher\obj\Release\net8.0\PTOTracker.pdb
+C:\qb-pto-tracker\Launcher\obj\Release\net8.0\Launcher.genruntimeconfig.cache
+C:\qb-pto-tracker\Launcher\obj\Release\net8.0\ref\PTOTracker.dll

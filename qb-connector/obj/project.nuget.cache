@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "O5Sd/Nnm/fE=",
+  "success": true,
+  "projectFilePath": "C:\\qb-pto-tracker\\qb-connector\\qb-connector.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\HIEX\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
+    "C:\\Users\\HIEX\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net48\\1.0.3\\microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

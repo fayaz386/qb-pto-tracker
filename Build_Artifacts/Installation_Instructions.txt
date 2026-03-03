@@ -1,0 +1,32 @@
+INSTALLATION & UPDATE INSTRUCTIONS
+==================================
+
+New Installation:
+-----------------
+PREREQUISITE: Install Node.js first!
+   - Download "LTS" version from: https://nodejs.org/
+   - Install it (Keep clicking Next).
+   - Restart the computer (optional but recommended) or at least restart this script.
+
+1. Copy this entire folder to the target computer.
+2. Right-click 'setup.bat' inside the Installer folder and select "Run as Administrator".
+   (Do not just double-click 'install.ps1', as it may be blocked by security settings).
+3. Follow the prompts in the window.
+4. A shortcut "PTO Tracker" will be created on the Desktop.
+
+HTTPS Certificate:
+-----------------
+The installer now includes 'server.pfx'.
+- If the browser says "Not Secure", follow the steps in the Walkthrough to trust 'server.pfx'.
+- This file is automatically copied to the installation folder.
+
+Updating an Existing Installation:
+----------------------------------
+1. Copy the new files (this folder) to the computer.
+2. Right-click 'update_helper.ps1' and select "Run with PowerShell".
+3. This script will:
+   - Stop the running application.
+   - Overwrite the old files with new ones.
+   - Restart the application automatically.
+
+NOTE: Your data (database) and settings are preserved during updates.

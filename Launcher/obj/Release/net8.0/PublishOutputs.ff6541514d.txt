@@ -1,0 +1,5 @@
+C:\qb-pto-tracker\Launcher\publish\PTOTracker.exe
+C:\qb-pto-tracker\Launcher\publish\PTOTracker.dll
+C:\qb-pto-tracker\Launcher\publish\PTOTracker.deps.json
+C:\qb-pto-tracker\Launcher\publish\PTOTracker.runtimeconfig.json
+C:\qb-pto-tracker\Launcher\publish\PTOTracker.pdb
