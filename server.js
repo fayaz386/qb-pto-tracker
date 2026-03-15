@@ -416,8 +416,21 @@ async function ipFilterMiddleware(req, res, next) {
     }
   }
 
-  if (localIPs.includes(ip)) {
-    // console.log(`DEBUG: IP ${ip} allowed (Local/Self)`);
+  // Ensure private network / VPN IPs are allowed by default
+  const isPrivate = (ipStr) => {
+    if (ipStr === "127.0.0.1" || ipStr === "::1" || ipStr === "localhost") return true;
+    const parts = ipStr.split('.');
+    if (parts.length !== 4) return false;
+    const p1 = parseInt(parts[0], 10);
+    const p2 = parseInt(parts[1], 10);
+    if (p1 === 10) return true;
+    if (p1 === 172 && (p2 >= 16 && p2 <= 31)) return true;
+    if (p1 === 192 && p2 === 168) return true;
+    return false;
+  };
+
+  if (localIPs.includes(ip) || isPrivate(ip)) {
+    // console.log(`DEBUG: IP ${ip} allowed (Local/Self/Private)`);
     return next();
   }
 
