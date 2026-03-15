@@ -1031,7 +1031,18 @@ app.get("/api/employee-details", async (req, res) => {
         sick_days_used: emp.sick_days_used != null ? Number(emp.sick_days_used) : null,
         bereavement_used_hours: emp.bereavement_used_hours != null ? Number(emp.bereavement_used_hours) : null,
         bereavement_used_amount: emp.bereavement_used_amount != null ? Number(emp.bereavement_used_amount) : null,
-        bereavement_days_used: emp.bereavement_days_used != null ? Number(emp.bereavement_days_used) : null
+        bereavement_days_used: emp.bereavement_days_used != null ? Number(emp.bereavement_days_used) : null,
+        
+        // --- NEW ACCRUAL FIELDS ---
+        vacation_accrual_period: emp.vacation_accrual_period,
+        vacation_hours_accrued: emp.vacation_hours_accrued != null ? Number(emp.vacation_hours_accrued) : null,
+        vacation_max_hours: emp.vacation_max_hours != null ? Number(emp.vacation_max_hours) : null,
+        vacation_reset_yearly: emp.vacation_reset_yearly,
+        
+        sick_accrual_period: emp.sick_accrual_period,
+        sick_hours_accrued: emp.sick_hours_accrued != null ? Number(emp.sick_hours_accrued) : null,
+        sick_max_hours: emp.sick_max_hours != null ? Number(emp.sick_max_hours) : null,
+        sick_reset_yearly: emp.sick_reset_yearly
       },
       history: visibleReports.slice(0, 50), // Limit returned history to 50
     });
