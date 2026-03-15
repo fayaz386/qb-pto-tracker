@@ -625,8 +625,8 @@ async function loadEmployeeDetails(hotel, employee) {
   const calculatedAvailable = Math.max(0, accHoursNum - usedHrsNum);
   const qbReportedAvailable = cb.sick_hours_available != null ? Number(cb.sick_hours_available) : 0;
   
-  // Mismatch Logic: If User's logic specifies Sick Hours Used != Hours Available as of today
-  const isMismatch = qbReportedAvailable.toFixed(2) !== calculatedAvailable.toFixed(2);
+  // Mismatch Logic: "Sick Hours Used" (Our local calc) vs "Hours used in 2026" (QB reported)
+  const isMismatch = sickHrsVal.toFixed(2) !== usedHrsNum.toFixed(2);
   const mismatchWarningHtml = isMismatch && accHoursNum > 0 ? `<div style="background-color: #ffeb3b; color: #b71c1c; font-weight: bold; text-align: center; padding: 6px; margin-bottom: 10px; border: 1px solid #fbc02d; border-radius: 4px; font-size: 13px; animation: flash 2s infinite;">SICK HOURS MISMATCH WITH QB</div>` : '';
 
   if (sickEl) {
