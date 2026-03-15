@@ -128,7 +128,7 @@ const DEFAULT_HOTELS = [
 
 async function ensureSchema() {
   /* v1.3.14 schema updates */
-  await pool.query(`
+   await pool.query(`
      ALTER TABLE pto_balances ADD COLUMN IF NOT EXISTS sick_amount NUMERIC;
      ALTER TABLE pto_balances ADD COLUMN IF NOT EXISTS bereavement_hours NUMERIC;
      ALTER TABLE pto_balances ADD COLUMN IF NOT EXISTS bereavement_amount NUMERIC;
@@ -142,6 +142,16 @@ async function ensureSchema() {
      ALTER TABLE employees ADD COLUMN IF NOT EXISTS vacation_hours_available NUMERIC DEFAULT 0;
      ALTER TABLE employees ADD COLUMN IF NOT EXISTS sick_hours_available NUMERIC DEFAULT 0;
      ALTER TABLE employees ADD COLUMN IF NOT EXISTS vacation_days_allowed NUMERIC DEFAULT 0;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS vacation_accrual_period TEXT;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS vacation_hours_accrued NUMERIC DEFAULT 0;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS vacation_max_hours NUMERIC DEFAULT 0;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS vacation_reset_yearly BOOLEAN DEFAULT false;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS vacation_hours_used NUMERIC DEFAULT 0;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS sick_accrual_period TEXT;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS sick_hours_accrued NUMERIC DEFAULT 0;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS sick_max_hours NUMERIC DEFAULT 0;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS sick_reset_yearly BOOLEAN DEFAULT false;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS sick_hours_used NUMERIC DEFAULT 0;
    `);
 }
 
@@ -2089,9 +2099,11 @@ app.get("/api/qb/employees", async (req, res) => {
         await pool.query(`
               INSERT INTO employees (
                   employee_key, display_name, is_active, 
-                  account_number, email, phone, hired_date, birth_date, job_title, address, hotel
+                  account_number, email, phone, hired_date, birth_date, job_title, address, hotel,
+                  vacation_accrual_period, vacation_hours_accrued, vacation_max_hours, vacation_reset_yearly, vacation_hours_used,
+                  sick_accrual_period, sick_hours_accrued, sick_max_hours, sick_reset_yearly, sick_hours_used
               )
-              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
               ON CONFLICT (employee_key) DO UPDATE SET 
                  display_name = EXCLUDED.display_name,
                  is_active = EXCLUDED.is_active,
@@ -2102,7 +2114,17 @@ app.get("/api/qb/employees", async (req, res) => {
                  birth_date = EXCLUDED.birth_date,
                  job_title = EXCLUDED.job_title,
                  address = EXCLUDED.address,
-                 hotel = EXCLUDED.hotel
+                 hotel = EXCLUDED.hotel,
+                 vacation_accrual_period = EXCLUDED.vacation_accrual_period,
+                 vacation_hours_accrued = EXCLUDED.vacation_hours_accrued,
+                 vacation_max_hours = EXCLUDED.vacation_max_hours,
+                 vacation_reset_yearly = EXCLUDED.vacation_reset_yearly,
+                 vacation_hours_used = EXCLUDED.vacation_hours_used,
+                 sick_accrual_period = EXCLUDED.sick_accrual_period,
+                 sick_hours_accrued = EXCLUDED.sick_hours_accrued,
+                 sick_max_hours = EXCLUDED.sick_max_hours,
+                 sick_reset_yearly = EXCLUDED.sick_reset_yearly,
+                 sick_hours_used = EXCLUDED.sick_hours_used
            `, [
           name, name, isActive,
           emp.account_number || null,
@@ -2112,7 +2134,17 @@ app.get("/api/qb/employees", async (req, res) => {
           emp.birth_date || null,
           emp.job_title || null,
           emp.address || null,
-          targetHotel || null // Update hotel!
+          targetHotel || null, // Update hotel!
+          emp.vacation_accrual_period || null,
+          emp.vacation_hours_accrued || 0,
+          emp.vacation_max_hours || 0,
+          emp.vacation_reset_yearly || false,
+          emp.vacation_hours_used || 0,
+          emp.sick_accrual_period || null,
+          emp.sick_hours_accrued || 0,
+          emp.sick_max_hours || 0,
+          emp.sick_reset_yearly || false,
+          emp.sick_hours_used || 0
         ]);
       }
       // Log History

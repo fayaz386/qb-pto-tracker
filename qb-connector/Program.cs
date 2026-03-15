@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
@@ -238,14 +238,33 @@ namespace QBConnector
                     // Parse Vacation & Sick Hours (PT format e.g. PT40H30M)
                     XmlNode payroll = emp.SelectSingleNode("EmployeePayrollInfo");
                     if (payroll != null) {
-                        // Use generic GetNodeText/ParseQBDuration helpers if available, or just implement inline safely
-                        string vh = ""; try { vh = payroll.SelectSingleNode("VacationHours/HoursAvailable")?.InnerText; } catch {}
-                        string sh = ""; try { sh = payroll.SelectSingleNode("SickHours/HoursAvailable")?.InnerText; } catch {}
-                        e["vacation_hours_available"] = ParseQBDuration(vh);
-                        e["sick_hours_available"] = ParseQBDuration(sh);
+                        e["vacation_hours_available"] = ParseQBDuration(GetVal(payroll, "VacationHours/HoursAvailable"));
+                        e["vacation_accrual_period"] = GetVal(payroll, "VacationHours/AccrualPeriod");
+                        e["vacation_hours_accrued"] = ParseQBDuration(GetVal(payroll, "VacationHours/HoursAccrued"));
+                        e["vacation_max_hours"] = ParseQBDuration(GetVal(payroll, "VacationHours/MaximumHours"));
+                        e["vacation_reset_yearly"] = GetVal(payroll, "VacationHours/IsResettingHoursEachNewYear") == "true";
+                        e["vacation_hours_used"] = ParseQBDuration(GetVal(payroll, "VacationHours/HoursUsed"));
+
+                        e["sick_hours_available"] = ParseQBDuration(GetVal(payroll, "SickHours/HoursAvailable"));
+                        e["sick_accrual_period"] = GetVal(payroll, "SickHours/AccrualPeriod");
+                        e["sick_hours_accrued"] = ParseQBDuration(GetVal(payroll, "SickHours/HoursAccrued"));
+                        e["sick_max_hours"] = ParseQBDuration(GetVal(payroll, "SickHours/MaximumHours"));
+                        e["sick_reset_yearly"] = GetVal(payroll, "SickHours/IsResettingHoursEachNewYear") == "true";
+                        e["sick_hours_used"] = ParseQBDuration(GetVal(payroll, "SickHours/HoursUsed"));
                     } else {
                          e["vacation_hours_available"] = 0;
+                         e["vacation_accrual_period"] = "";
+                         e["vacation_hours_accrued"] = 0;
+                         e["vacation_max_hours"] = 0;
+                         e["vacation_reset_yearly"] = false;
+                         e["vacation_hours_used"] = 0;
+
                          e["sick_hours_available"] = 0;
+                         e["sick_accrual_period"] = "";
+                         e["sick_hours_accrued"] = 0;
+                         e["sick_max_hours"] = 0;
+                         e["sick_reset_yearly"] = false;
+                         e["sick_hours_used"] = 0;
                     }
 
                     employees.Add(e);

@@ -8,3 +8,4 @@ C:\qb-pto-tracker\qb-connector\bin\Debug\net48\qb-connector.exe.config
 C:\qb-pto-tracker\qb-connector\bin\Debug\net48\qb-connector.pdb
 C:\qb-pto-tracker\qb-connector\obj\Debug\net48\qb-connector.exe
 C:\qb-pto-tracker\qb-connector\obj\Debug\net48\qb-connector.pdb
+C:\qb-pto-tracker\qb-connector\obj\Debug\net48\qb-connector.sourcelink.json

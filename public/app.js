@@ -233,6 +233,9 @@ function renderEmployeeDetailsTable(payload) {
         <div class="balanceCard" id="sickCardWrapper">
            <div id="sickBalance">Loading...</div>
         </div>
+        <div class="balanceCard" id="accrualCardWrapper" style="padding: 0; overflow: hidden; border: 1px solid #8e9db0;">
+           <div id="accrualBalance">Loading...</div>
+        </div>
         <div class="balanceCard" id="bereavCardWrapper">
            <div id="bereavBalance">Loading...</div>
         </div>
@@ -656,6 +659,66 @@ async function loadEmployeeDetails(hotel, employee) {
   }
 
 
+
+  // Accrual Hours Card (Mimic QB UI)
+  const accrualEl = document.getElementById("accrualBalance");
+  if (accrualEl) {
+    const accPeriod = cb.sick_accrual_period || "None";
+    const accHours = cb.sick_hours_accrued != null ? Number(cb.sick_hours_accrued).toFixed(2) : "";
+    const accMax = cb.sick_max_hours != null && cb.sick_max_hours > 0 ? Number(cb.sick_max_hours).toFixed(2) : "";
+    const isReset = cb.sick_reset_yearly ? "checked" : "";
+    const hrsAvailStr = cb.sick_hours_available != null ? Number(cb.sick_hours_available).toFixed(2) : "0.00";
+    
+    // Convert e.g., "BeginningOfYear" -> "Beginning of year"
+    const displayPeriod = accPeriod.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
+    const capPeriod = displayPeriod.charAt(0).toUpperCase() + displayPeriod.slice(1);
+
+    accrualEl.innerHTML = `
+      <div style="background-color: #1c3d69; color: white; padding: 6px 12px; font-weight: bold; font-family: Tahoma, sans-serif; font-size: 13px; display: flex; justify-content: space-between;">
+        <span>Accrual Hours for ${esc(employee)}</span>
+        <span style="cursor: pointer; opacity: 0.8;">&times;</span>
+      </div>
+      <div style="padding: 15px; background-color: #f0f0f0; font-family: Tahoma, sans-serif; font-size: 13px; color: #000;">
+        <table style="width: 100%; border-spacing: 0 10px;">
+          <tr>
+             <td style="width: 60%;">Title</td>
+             <td><input type="text" readonly value="Sick" style="width: 60px; padding: 2px; border: 1px solid #ccc; background: #eee;"> Hours</td>
+          </tr>
+          <tr>
+             <td>Hours available as of today</td>
+             <td><input type="text" readonly value="${hrsAvailStr}" style="width: 60px; padding: 2px; border: 1px solid #7a9cd3;"></td>
+          </tr>
+          <tr>
+             <td>Hours used in ${currentYear}</td>
+             <td><input type="text" readonly value="${hrsStr}" style="width: 60px; padding: 2px; border: 1px solid #ccc; background: #eee;"></td>
+          </tr>
+          <tr>
+             <td colspan="2">Accrual period</td>
+          </tr>
+          <tr>
+             <td colspan="2">
+               <select disabled style="width: 150px; padding: 2px; border: 1px solid #ccc; background: #fff; color: #000;">
+                 <option>${capPeriod}</option>
+               </select>
+             </td>
+          </tr>
+          <tr>
+             <td>Hour<u>s</u> accrued at ${displayPeriod}</td>
+             <td><input type="text" readonly value="${accHours}" style="width: 60px; padding: 2px; border: 1px solid #ccc; background: #eee;"></td>
+          </tr>
+          <tr>
+             <td><u>M</u>aximum number of hours</td>
+             <td><input type="text" readonly value="${accMax}" style="width: 60px; padding: 2px; border: 1px solid #ccc; background: #eee;"></td>
+          </tr>
+          <tr>
+             <td colspan="2" style="padding-top: 5px;">
+               <label style="cursor: pointer;"><input type="checkbox" disabled ${isReset}> <u>R</u>eset hours each new year?</label>
+             </td>
+          </tr>
+        </table>
+      </div>
+    `;
+  }
 
   // Bereavement Card
   const bereavEl = document.getElementById("bereavBalance");
