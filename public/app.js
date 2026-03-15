@@ -621,12 +621,10 @@ async function loadEmployeeDetails(hotel, employee) {
   
   // Accrual Math needed for Mismatch Logic
   const accHoursNum = cb.sick_hours_accrued != null ? Number(cb.sick_hours_accrued) : 0;
-  const usedHrsNum = sickHrsVal != null ? Number(sickHrsVal) : 0;
-  const calculatedAvailable = Math.max(0, accHoursNum - usedHrsNum);
-  const qbReportedAvailable = cb.sick_hours_available != null ? Number(cb.sick_hours_available) : 0;
-  
+  const qbReportedUsed = cb.sick_used_hours != null ? Number(cb.sick_used_hours) : (parseNum(cb.sick_hours) || 0);
+
   // Mismatch Logic: "Sick Hours Used" (Our local calc) vs "Hours used in 2026" (QB reported)
-  const isMismatch = sickHrsVal.toFixed(2) !== usedHrsNum.toFixed(2);
+  const isMismatch = sickHrsVal.toFixed(2) !== qbReportedUsed.toFixed(2);
   const mismatchWarningHtml = isMismatch && accHoursNum > 0 ? `<div style="background-color: #ffeb3b; color: #b71c1c; font-weight: bold; text-align: center; padding: 6px; margin-bottom: 10px; border: 1px solid #fbc02d; border-radius: 4px; font-size: 13px; animation: flash 2s infinite;">SICK HOURS MISMATCH WITH QB</div>` : '';
 
   if (sickEl) {
@@ -678,9 +676,12 @@ async function loadEmployeeDetails(hotel, employee) {
     const accPeriod = cb.sick_accrual_period || "None";
     const accHours = cb.sick_hours_accrued != null ? accHoursNum.toFixed(2) : "";
     const accMax = cb.sick_max_hours != null && cb.sick_max_hours > 0 ? Number(cb.sick_max_hours).toFixed(2) : "";
-    // Use RAW QuickBooks value for Available Hours
-    // Formula: "Hours available as of today" = ("Hours accrued at beginning of year") - ("Hours used in 2026") -- REMOVED AS REQUESTED
-    const hrsAvailStr = cb.sick_hours_available != null ? Number(cb.sick_hours_available).toFixed(2) : "0.00";
+    // User Request: Hours available as of today = (Accrued - sickHrsVal) so it perfectly reflects the tracker's deductions
+    const calculatedAvailable = Math.max(0, accHoursNum - sickHrsVal);
+    const hrsAvailStr = calculatedAvailable.toFixed(2);
+    
+    // User Request: Hours used in [year] should display the tracker's calculated sickHrsVal so they match visually when fixed
+    const windowUsedHrsStr = sickHrsVal.toFixed(2);
     
     // Convert e.g., "BeginningOfYear" -> "beginning of year"
     const displayPeriod = accPeriod.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
@@ -710,7 +711,7 @@ async function loadEmployeeDetails(hotel, employee) {
           </tr>
           <tr>
              <td style="padding-bottom: 2px;">Hours used in ${currentYear}</td>
-             <td style="padding-bottom: 2px;"><input type="text" readonly value="${hrsStr}" style="${inputStyle}"></td>
+             <td style="padding-bottom: 2px;"><input type="text" readonly value="${windowUsedHrsStr}" style="${inputStyle}"></td>
           </tr>
           <tr>
              <td style="padding-bottom: 2px;">Accrual period</td>
