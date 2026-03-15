@@ -622,6 +622,7 @@ async function loadEmployeeDetails(hotel, employee) {
   // Accrual Math needed for Mismatch Logic
   const accHoursNum = cb.sick_hours_accrued != null ? Number(cb.sick_hours_accrued) : 0;
   const qbReportedUsed = cb.sick_used_hours != null ? Number(cb.sick_used_hours) : (parseNum(cb.sick_hours) || 0);
+  const qbReportedAvailable = cb.sick_hours_available != null ? Number(cb.sick_hours_available) : 0;
 
   // Mismatch Logic: "Sick Hours Used" (Our local calc) vs "Hours used in 2026" (QB reported)
   const isMismatch = sickHrsVal.toFixed(2) !== qbReportedUsed.toFixed(2);
