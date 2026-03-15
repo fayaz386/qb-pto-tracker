@@ -619,10 +619,16 @@ async function loadEmployeeDetails(hotel, employee) {
   const sickManualDaysTotal = sickManualRegularRows.reduce((sum, r) => sum + Number(r.days || 0), 0);
   const sickManualStr = sickManualDaysTotal.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 });
   
-  // Accrual Math needed for Mismatch Logic
+  // Accrual Math needed for exact QB UI Match
   const accHoursNum = cb.sick_hours_accrued != null ? Number(cb.sick_hours_accrued) : 0;
-  const qbReportedUsed = cb.sick_hours_used_accrual != null ? Number(cb.sick_hours_used_accrual) : (cb.sick_used_hours != null ? Number(cb.sick_used_hours) : (parseNum(cb.sick_hours) || 0));
   const qbReportedAvailable = cb.sick_hours_available != null ? Number(cb.sick_hours_available) : 0;
+  
+  // QUICKBOOKS SDK BUG AVOIDANCE: 
+  // The QB API 'HoursUsed' field often returns lifetime usage instead of YTD. 
+  // However, the QB UI strictly follows: Available = Accrued - Used.
+  // Therefore: Used = Accrued - Available.
+  let qbReportedUsed = accHoursNum - qbReportedAvailable;
+  if (qbReportedUsed < 0) qbReportedUsed = 0; // Fallback to 0 if negative anomaly
 
   // Mismatch Logic: "Sick Hours Used" (Our local calc) vs "Hours used in 2026" (QB reported)
   const isMismatch = sickHrsVal.toFixed(2) !== qbReportedUsed.toFixed(2);
