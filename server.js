@@ -2090,6 +2090,11 @@ app.get("/api/qb/employees", async (req, res) => {
     const result = await sendQbCommand("get-employees");
 
     if (result.status === "ok" && Array.isArray(result.employees)) {
+      console.log("=== DEBUG ACCRUAL DATA FOR CHRIS ===");
+      const chris = result.employees.filter(e => e.name && e.name.includes("Chris"));
+      console.log(JSON.stringify(chris, null, 2));
+      console.log("=====================================");
+
       // UPSERT Employees (Metadata)
       for (const emp of result.employees) {
         const name = String(emp.name || "").trim();

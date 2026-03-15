@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("qb-connector")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c529442a0d2f6a2cc12f820382ffd92f9121ac00")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0f4c416e61773edbec609f86928a0ef83e99bd04")]
 [assembly: System.Reflection.AssemblyProductAttribute("qb-connector")]
 [assembly: System.Reflection.AssemblyTitleAttribute("qb-connector")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

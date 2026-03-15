@@ -378,17 +378,27 @@ namespace QBConnector
              });
         }        
         
-        // Helper: Parse ISO8601 Duration (PT12H30M) -> Decimal Hours (12.5)
+        // Helper: Parse ISO8601 Duration (PT12H30M) or hh:mm:ss or decimal -> Decimal Hours (12.5)
         static double ParseQBDuration(string ptStr)
         {
             if (string.IsNullOrEmpty(ptStr)) return 0;
             try {
-                // Simple parsing for format P[n]Y[n]M[n]DT[n]H[n]M[n]S
-                // QB usually returns PTxxHxxMxxS
+                // Try format P[n]Y[n]M[n]DT[n]H[n]M[n]S (e.g. PTxxHxxMxxS)
                 TimeSpan ts = System.Xml.XmlConvert.ToTimeSpan(ptStr);
                 return ts.TotalHours;
             } catch {
-                return 0;
+                try {
+                    // Try parsing as standard TimeSpan format (e.g., "16:00:00")
+                    if (TimeSpan.TryParse(ptStr, out TimeSpan parsedTs)) {
+                        return parsedTs.TotalHours;
+                    }
+                    // Try parsing as raw floating decimal (e.g., "16.00" or "16")
+                    if (double.TryParse(ptStr, out double dVal)) {
+                        return dVal;
+                    }
+                } catch {}
+                
+                return 0; // Final fallback
             }
         }
 
