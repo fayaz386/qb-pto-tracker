@@ -676,12 +676,10 @@ async function loadEmployeeDetails(hotel, employee) {
     const accPeriod = cb.sick_accrual_period || "None";
     const accHours = cb.sick_hours_accrued != null ? accHoursNum.toFixed(2) : "";
     const accMax = cb.sick_max_hours != null && cb.sick_max_hours > 0 ? Number(cb.sick_max_hours).toFixed(2) : "";
-    // User Request: Hours available as of today = (Accrued - sickHrsVal) so it perfectly reflects the tracker's deductions
-    const calculatedAvailable = Math.max(0, accHoursNum - sickHrsVal);
-    const hrsAvailStr = calculatedAvailable.toFixed(2);
     
-    // User Request: Hours used in [year] should display the tracker's calculated sickHrsVal so they match visually when fixed
-    const windowUsedHrsStr = sickHrsVal.toFixed(2);
+    // STRICT USER REQUEST: Accrual window MUST ONLY show exact QuickBooks data, unaltered by tracker logic
+    const hrsAvailStr = qbReportedAvailable.toFixed(2);
+    const windowUsedHrsStr = qbReportedUsed.toFixed(2);
     
     // Convert e.g., "BeginningOfYear" -> "beginning of year"
     const displayPeriod = accPeriod.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
