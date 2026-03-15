@@ -1039,6 +1039,7 @@ app.get("/api/employee-details", async (req, res) => {
         vacation_max_hours: emp.vacation_max_hours != null ? Number(emp.vacation_max_hours) : null,
         vacation_reset_yearly: emp.vacation_reset_yearly,
         
+        sick_hours_available: emp.sick_hours_available != null ? Number(emp.sick_hours_available) : null,
         sick_accrual_period: emp.sick_accrual_period,
         sick_hours_accrued: emp.sick_hours_accrued != null ? Number(emp.sick_hours_accrued) : null,
         sick_max_hours: emp.sick_max_hours != null ? Number(emp.sick_max_hours) : null,
