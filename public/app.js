@@ -623,10 +623,11 @@ async function loadEmployeeDetails(hotel, employee) {
   const accHoursNum = cb.sick_hours_accrued != null ? Number(cb.sick_hours_accrued) : 0;
   const usedHrsNum = sickHrsVal != null ? Number(sickHrsVal) : 0;
   const calculatedAvailable = Math.max(0, accHoursNum - usedHrsNum);
+  const qbReportedAvailable = cb.sick_hours_available != null ? Number(cb.sick_hours_available) : 0;
   
   // Mismatch Logic: If User's logic specifies Sick Hours Used != Hours Available as of today
-  const isMismatch = sickHrsVal.toFixed(2) !== calculatedAvailable.toFixed(2);
-  const mismatchWarningHtml = isMismatch ? `<div style="background-color: #ffeb3b; color: #b71c1c; font-weight: bold; text-align: center; padding: 6px; margin-bottom: 10px; border: 1px solid #fbc02d; border-radius: 4px; font-size: 13px; animation: flash 2s infinite;">SICK HOURS MISMATCH WITH QB</div>` : '';
+  const isMismatch = qbReportedAvailable.toFixed(2) !== calculatedAvailable.toFixed(2);
+  const mismatchWarningHtml = isMismatch && accHoursNum > 0 ? `<div style="background-color: #ffeb3b; color: #b71c1c; font-weight: bold; text-align: center; padding: 6px; margin-bottom: 10px; border: 1px solid #fbc02d; border-radius: 4px; font-size: 13px; animation: flash 2s infinite;">SICK HOURS MISMATCH WITH QB</div>` : '';
 
   if (sickEl) {
     // Fixed height ensures alignment across columns even if text wraps
@@ -677,9 +678,9 @@ async function loadEmployeeDetails(hotel, employee) {
     const accPeriod = cb.sick_accrual_period || "None";
     const accHours = cb.sick_hours_accrued != null ? accHoursNum.toFixed(2) : "";
     const accMax = cb.sick_max_hours != null && cb.sick_max_hours > 0 ? Number(cb.sick_max_hours).toFixed(2) : "";
-    
-    // Formula: "Hours available as of today" = ("Hours accrued at beginning of year") - ("Hours used in 2026")
-    const hrsAvailStr = calculatedAvailable.toFixed(2);
+    // Use RAW QuickBooks value for Available Hours
+    // Formula: "Hours available as of today" = ("Hours accrued at beginning of year") - ("Hours used in 2026") -- REMOVED AS REQUESTED
+    const hrsAvailStr = cb.sick_hours_available != null ? Number(cb.sick_hours_available).toFixed(2) : "0.00";
     
     // Convert e.g., "BeginningOfYear" -> "beginning of year"
     const displayPeriod = accPeriod.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
