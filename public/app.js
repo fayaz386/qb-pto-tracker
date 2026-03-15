@@ -547,7 +547,7 @@ async function loadEmployeeDetails(hotel, employee) {
       vacEl.innerHTML = `
         <div style="display:flex; flex-direction:row; align-items:center; justify-content:space-around; width:100%;">
           <div style="text-align:center; padding:0 8px;">
-            <div style="font-size:0.75rem; text-transform:uppercase; color:#666; margin-bottom:4px; height:32px; display:flex; align-items:flex-end; justify-content:center; line-height:1.1;">Vacation Pay Available</div>
+            <div style="font-size:0.75rem; text-transform:uppercase; color:#666; margin-bottom:4px; height:32px; display:flex; align-items:flex-end; justify-content:center; line-height:1.1;">QB Vacation Pay Available</div>
             <div style="font-weight:bold; font-size:1.4rem;">${amtStr}</div>
           </div>
           <div style="text-align:center; padding:0 8px; border-left:1px solid #ccc;">
@@ -618,12 +618,23 @@ async function loadEmployeeDetails(hotel, employee) {
   // Calculate Total Regular Manual Days (Input) for display
   const sickManualDaysTotal = sickManualRegularRows.reduce((sum, r) => sum + Number(r.days || 0), 0);
   const sickManualStr = sickManualDaysTotal.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  
+  // Accrual Math needed for Mismatch Logic
+  const accHoursNum = cb.sick_hours_accrued != null ? Number(cb.sick_hours_accrued) : 0;
+  const usedHrsNum = sickHrsVal != null ? Number(sickHrsVal) : 0;
+  const calculatedAvailable = Math.max(0, accHoursNum - usedHrsNum);
+  
+  // Mismatch Logic: If User's logic specifies Sick Hours Used != Hours Available as of today
+  const isMismatch = sickHrsVal.toFixed(2) !== calculatedAvailable.toFixed(2);
+  const mismatchWarningHtml = isMismatch ? `<div style="background-color: #ffeb3b; color: #b71c1c; font-weight: bold; text-align: center; padding: 6px; margin-bottom: 10px; border: 1px solid #fbc02d; border-radius: 4px; font-size: 13px; animation: flash 2s infinite;">SICK HOURS MISMATCH WITH QB</div>` : '';
 
   if (sickEl) {
     // Fixed height ensures alignment across columns even if text wraps
     const headerStyle = "font-size:0.75rem; text-transform:uppercase; color:#666; margin-bottom:4px; height:32px; display:flex; align-items:flex-end; justify-content:center; line-height:1.1;";
 
     sickEl.innerHTML = `
+        <style>@keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }</style>
+        ${mismatchWarningHtml}
         <div style="display:flex; flex-direction:row; align-items:center; justify-content:space-between; width:100%;">
           <div style="flex:1; text-align:center; border-right:1px solid #ccc; padding:0 8px;">
             <div style="${headerStyle}">Sick Hours Used</div>
@@ -664,18 +675,21 @@ async function loadEmployeeDetails(hotel, employee) {
   const accrualEl = document.getElementById("accrualBalance");
   if (accrualEl) {
     const accPeriod = cb.sick_accrual_period || "None";
-    const accHoursNum = cb.sick_hours_accrued != null ? Number(cb.sick_hours_accrued) : 0;
     const accHours = cb.sick_hours_accrued != null ? accHoursNum.toFixed(2) : "";
     const accMax = cb.sick_max_hours != null && cb.sick_max_hours > 0 ? Number(cb.sick_max_hours).toFixed(2) : "";
     
     // Formula: "Hours available as of today" = ("Hours accrued at beginning of year") - ("Hours used in 2026")
-    const usedHrsNum = sickHrsVal != null ? Number(sickHrsVal) : 0;
-    const calculatedAvailable = Math.max(0, accHoursNum - usedHrsNum).toFixed(2);
-    const hrsAvailStr = calculatedAvailable;
+    const hrsAvailStr = calculatedAvailable.toFixed(2);
     
     // Convert e.g., "BeginningOfYear" -> "beginning of year"
     const displayPeriod = accPeriod.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
     const capPeriod = displayPeriod.charAt(0).toUpperCase() + displayPeriod.slice(1);
+
+    // Hide Sick Logic: If 0 accrued
+    if (accHoursNum === 0) {
+      document.getElementById("sickCardWrapper").style.display = "none";
+      document.getElementById("accrualCardWrapper").style.display = "none";
+    }
 
     // Styles for Pill Inputs
     const inputStyle = "width: 65px; padding: 2px 10px; border: 1px solid #ccc; border-radius: 12px; background: #eee; font-family: Tahoma, sans-serif; font-size: 13px; text-align: left;";
@@ -1221,7 +1235,8 @@ async function wireEntryPage() {
     // Load Types for this hotel
     const tRes = await apiGet(`/api/settings/types?hotel=${encodeURIComponent(hotel)}`);
     const types = tRes.ok ? tRes.rows : [];
-    fillSelect(document.getElementById("entryType"), types.map(t => t.name), "Select type...");
+    window.currentHotelTypes = types.map(t => t.name);
+    fillSelect(document.getElementById("entryType"), window.currentHotelTypes, "Select type...");
 
     // Load Employees
     const data = await apiGet(`/api/employees?hotel=${encodeURIComponent(hotel)}`);
@@ -1342,6 +1357,17 @@ async function loadEntryHistory(hotel, employee) {
     if (history.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" class="muted">No manual entries found.</td></tr>';
       return;
+    }
+
+    const cb = res.current_balance || {};
+    const sickAccrued = cb.sick_hours_accrued != null ? Number(cb.sick_hours_accrued) : 0;
+    const typeSelect = document.getElementById("entryType");
+    if (typeSelect && window.currentHotelTypes) {
+      let allowedTypes = window.currentHotelTypes;
+      if (sickAccrued === 0) {
+        allowedTypes = allowedTypes.filter(t => t.toLowerCase() !== 'sick');
+      }
+      fillSelect(typeSelect, allowedTypes, "Select type...");
     }
 
     const isAdmin = (currentUser && (currentUser.role === 'admin' || currentUser.isAdmin));
