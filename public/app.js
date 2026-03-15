@@ -664,56 +664,60 @@ async function loadEmployeeDetails(hotel, employee) {
   const accrualEl = document.getElementById("accrualBalance");
   if (accrualEl) {
     const accPeriod = cb.sick_accrual_period || "None";
-    const accHours = cb.sick_hours_accrued != null ? Number(cb.sick_hours_accrued).toFixed(2) : "";
+    const accHoursNum = cb.sick_hours_accrued != null ? Number(cb.sick_hours_accrued) : 0;
+    const accHours = cb.sick_hours_accrued != null ? accHoursNum.toFixed(2) : "";
     const accMax = cb.sick_max_hours != null && cb.sick_max_hours > 0 ? Number(cb.sick_max_hours).toFixed(2) : "";
-    const isReset = cb.sick_reset_yearly ? "checked" : "";
-    const hrsAvailStr = cb.sick_hours_available != null ? Number(cb.sick_hours_available).toFixed(2) : "0.00";
     
-    // Convert e.g., "BeginningOfYear" -> "Beginning of year"
+    // Formula: "Hours available as of today" = ("Hours accrued at beginning of year") - ("Hours used in 2026")
+    const usedHrsNum = sickHrsVal != null ? Number(sickHrsVal) : 0;
+    const calculatedAvailable = Math.max(0, accHoursNum - usedHrsNum).toFixed(2);
+    const hrsAvailStr = calculatedAvailable;
+    
+    // Convert e.g., "BeginningOfYear" -> "beginning of year"
     const displayPeriod = accPeriod.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
     const capPeriod = displayPeriod.charAt(0).toUpperCase() + displayPeriod.slice(1);
 
+    // Styles for Pill Inputs
+    const inputStyle = "width: 65px; padding: 2px 10px; border: 1px solid #ccc; border-radius: 12px; background: #eee; font-family: Tahoma, sans-serif; font-size: 13px; text-align: left;";
+    const availInputStyle = "width: 65px; padding: 2px 10px; border: 1px solid #7a9cd3; border-radius: 12px; background: #fff; font-family: Tahoma, sans-serif; font-size: 13px; text-align: left;";
+    const selectStyle = "width: 160px; padding: 3px 8px; border: 1px solid #ccc; border-radius: 12px; background: #fff; color: #000; font-family: Tahoma, sans-serif; font-size: 13px;";
+
     accrualEl.innerHTML = `
-      <div style="background-color: #1c3d69; color: white; padding: 6px 12px; font-weight: bold; font-family: Tahoma, sans-serif; font-size: 13px; display: flex; justify-content: space-between;">
-        <span>Accrual Hours for ${esc(employee)}</span>
-        <span style="cursor: pointer; opacity: 0.8;">&times;</span>
+      <div style="background-color: #1c3d69; color: white; padding: 8px 12px; font-weight: bold; font-family: Tahoma, sans-serif; font-size: 14px; display: flex; justify-content: space-between;">
+        <span>QB accrual hours</span>
+        <span style="cursor: pointer; opacity: 0.8;" onclick="this.parentElement.parentElement.style.display='none'">&times;</span>
       </div>
-      <div style="padding: 15px; background-color: #f0f0f0; font-family: Tahoma, sans-serif; font-size: 13px; color: #000;">
-        <table style="width: 100%; border-spacing: 0 10px;">
+      <div style="padding: 15px 25px; background-color: #f0f0f0; font-family: Tahoma, sans-serif; font-size: 13px; color: #000; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
+        <table style="width: 100%; border-spacing: 0 12px;">
           <tr>
-             <td style="width: 60%;">Title</td>
-             <td><input type="text" readonly value="Sick" style="width: 60px; padding: 2px; border: 1px solid #ccc; background: #eee;"> Hours</td>
+             <td style="width: 60%; padding-bottom: 6px;">Title</td>
+             <td style="padding-bottom: 6px;"><input type="text" readonly value="Sick" style="${inputStyle}"> Hours</td>
           </tr>
           <tr>
-             <td>Hours available as of today</td>
-             <td><input type="text" readonly value="${hrsAvailStr}" style="width: 60px; padding: 2px; border: 1px solid #7a9cd3;"></td>
+             <td style="padding-bottom: 6px;">Hours available as of today</td>
+             <td style="padding-bottom: 6px;"><input type="text" readonly value="${hrsAvailStr}" style="${availInputStyle}"></td>
           </tr>
           <tr>
-             <td>Hours used in ${currentYear}</td>
-             <td><input type="text" readonly value="${hrsStr}" style="width: 60px; padding: 2px; border: 1px solid #ccc; background: #eee;"></td>
+             <td style="padding-bottom: 6px;">Hours used in ${currentYear}</td>
+             <td style="padding-bottom: 6px;"><input type="text" readonly value="${hrsStr}" style="${inputStyle}"></td>
           </tr>
           <tr>
-             <td colspan="2">Accrual period</td>
+             <td colspan="2" style="padding-top: 6px; padding-bottom: 2px;">Accrual period</td>
           </tr>
           <tr>
-             <td colspan="2">
-               <select disabled style="width: 150px; padding: 2px; border: 1px solid #ccc; background: #fff; color: #000;">
+             <td colspan="2" style="padding-bottom: 10px;">
+               <select disabled style="${selectStyle}">
                  <option>${capPeriod}</option>
                </select>
              </td>
           </tr>
           <tr>
-             <td>Hour<u>s</u> accrued at ${displayPeriod}</td>
-             <td><input type="text" readonly value="${accHours}" style="width: 60px; padding: 2px; border: 1px solid #ccc; background: #eee;"></td>
+             <td style="padding-bottom: 6px;">Hour<u>s</u> accrued at ${displayPeriod}</td>
+             <td style="padding-bottom: 6px;"><input type="text" readonly value="${accHours}" style="${inputStyle}"></td>
           </tr>
           <tr>
              <td><u>M</u>aximum number of hours</td>
-             <td><input type="text" readonly value="${accMax}" style="width: 60px; padding: 2px; border: 1px solid #ccc; background: #eee;"></td>
-          </tr>
-          <tr>
-             <td colspan="2" style="padding-top: 5px;">
-               <label style="cursor: pointer;"><input type="checkbox" disabled ${isReset}> <u>R</u>eset hours each new year?</label>
-             </td>
+             <td><input type="text" readonly value="${accMax}" style="${inputStyle}"></td>
           </tr>
         </table>
       </div>
