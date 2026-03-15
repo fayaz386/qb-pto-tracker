@@ -2117,9 +2117,9 @@ app.get("/api/qb/employees", async (req, res) => {
                   employee_key, display_name, is_active, 
                   account_number, email, phone, hired_date, birth_date, job_title, address, hotel,
                   vacation_accrual_period, vacation_hours_accrued, vacation_max_hours, vacation_reset_yearly, vacation_hours_used,
-                  sick_accrual_period, sick_hours_accrued, sick_max_hours, sick_reset_yearly, sick_hours_used
+                  sick_hours_available, sick_accrual_period, sick_hours_accrued, sick_max_hours, sick_reset_yearly, sick_hours_used
               )
-              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
               ON CONFLICT (employee_key) DO UPDATE SET 
                  display_name = EXCLUDED.display_name,
                  is_active = EXCLUDED.is_active,
@@ -2136,6 +2136,7 @@ app.get("/api/qb/employees", async (req, res) => {
                  vacation_max_hours = EXCLUDED.vacation_max_hours,
                  vacation_reset_yearly = EXCLUDED.vacation_reset_yearly,
                  vacation_hours_used = EXCLUDED.vacation_hours_used,
+                 sick_hours_available = EXCLUDED.sick_hours_available,
                  sick_accrual_period = EXCLUDED.sick_accrual_period,
                  sick_hours_accrued = EXCLUDED.sick_hours_accrued,
                  sick_max_hours = EXCLUDED.sick_max_hours,
@@ -2156,6 +2157,7 @@ app.get("/api/qb/employees", async (req, res) => {
           emp.vacation_max_hours || 0,
           emp.vacation_reset_yearly || false,
           emp.vacation_hours_used || 0,
+          emp.sick_hours_available || 0,
           emp.sick_accrual_period || null,
           emp.sick_hours_accrued || 0,
           emp.sick_max_hours || 0,
