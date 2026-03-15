@@ -686,6 +686,12 @@ async function loadEmployeeDetails(hotel, employee) {
     const displayPeriod = accPeriod.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
     const capPeriod = displayPeriod.charAt(0).toUpperCase() + displayPeriod.slice(1);
 
+    // Hide Sick Logic: If explicitly 0 configured by QB
+    if (cb.sick_hours_accrued != null && Number(cb.sick_hours_accrued) === 0) {
+      document.getElementById("sickCardWrapper").style.display = "none";
+      document.getElementById("accrualCardWrapper").style.display = "none";
+    }
+
     // Styles for Pill Inputs
     const inputStyle = "width: 65px; padding: 2px 10px; border: 1px solid #ccc; border-radius: 12px; background: #eee; font-family: Tahoma, sans-serif; font-size: 13px; text-align: left;";
     const availInputStyle = "width: 65px; padding: 2px 10px; border: 1px solid #7a9cd3; border-radius: 12px; background: #fff; font-family: Tahoma, sans-serif; font-size: 13px; text-align: left;";
