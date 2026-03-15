@@ -221,23 +221,23 @@ function renderEmployeeDetailsTable(payload) {
     </style>
 
     <div class="balance-grid">
-      <!-- Left Column: Vacation -->
-      <div>
+      <!-- Left Column: Vacation + Birthday + Bereavement -->
+      <div style="display:flex; flex-direction:column; gap:10px;">
         <div class="balanceCard" id="vacCardWrapper">
            <div id="vacBalance">Loading...</div>
         </div>
+        <div class="balanceCard" id="bereavCardWrapper">
+           <div id="bereavBalance">Loading...</div>
+        </div>
       </div>
 
-      <!-- Right Column: Sick + Bereavement -->
+      <!-- Right Column: Sick + Accrual -->
       <div style="display:flex; flex-direction:column; gap:10px;">
         <div class="balanceCard" id="sickCardWrapper">
            <div id="sickBalance">Loading...</div>
         </div>
         <div class="balanceCard" id="accrualCardWrapper" style="padding: 0; overflow: hidden; border: 1px solid #8e9db0;">
            <div id="accrualBalance">Loading...</div>
-        </div>
-        <div class="balanceCard" id="bereavCardWrapper">
-           <div id="bereavBalance">Loading...</div>
         </div>
       </div>
     </div>
@@ -683,37 +683,31 @@ async function loadEmployeeDetails(hotel, employee) {
     const selectStyle = "width: 160px; padding: 3px 8px; border: 1px solid #ccc; border-radius: 12px; background: #fff; color: #000; font-family: Tahoma, sans-serif; font-size: 13px;";
 
     accrualEl.innerHTML = `
-      <div style="background-color: #1c3d69; color: white; padding: 8px 12px; font-weight: bold; font-family: Tahoma, sans-serif; font-size: 14px; display: flex; justify-content: space-between;">
-        <span>QB accrual hours</span>
+      <div style="background-color: #1c3d69; color: white; padding: 6px 12px; font-weight: bold; font-family: Tahoma, sans-serif; font-size: 14px; display: flex; justify-content: space-between;">
+        <span>QB Sick Accrual Hours</span>
         <span style="cursor: pointer; opacity: 0.8;" onclick="this.parentElement.parentElement.style.display='none'">&times;</span>
       </div>
-      <div style="padding: 15px 25px; background-color: #f0f0f0; font-family: Tahoma, sans-serif; font-size: 13px; color: #000; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
-        <table style="width: 100%; border-spacing: 0 12px;">
+      <div style="padding: 10px 15px; background-color: #f0f0f0; font-family: Tahoma, sans-serif; font-size: 13px; color: #000; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;">
+        <table style="width: 100%; border-spacing: 0 4px;">
           <tr>
-             <td style="width: 60%; padding-bottom: 6px;">Title</td>
-             <td style="padding-bottom: 6px;"><input type="text" readonly value="Sick" style="${inputStyle}"> Hours</td>
+             <td style="padding-bottom: 2px;">Hours available as of today</td>
+             <td style="padding-bottom: 2px;"><input type="text" readonly value="${hrsAvailStr}" style="${availInputStyle}"></td>
           </tr>
           <tr>
-             <td style="padding-bottom: 6px;">Hours available as of today</td>
-             <td style="padding-bottom: 6px;"><input type="text" readonly value="${hrsAvailStr}" style="${availInputStyle}"></td>
+             <td style="padding-bottom: 2px;">Hours used in ${currentYear}</td>
+             <td style="padding-bottom: 2px;"><input type="text" readonly value="${hrsStr}" style="${inputStyle}"></td>
           </tr>
           <tr>
-             <td style="padding-bottom: 6px;">Hours used in ${currentYear}</td>
-             <td style="padding-bottom: 6px;"><input type="text" readonly value="${hrsStr}" style="${inputStyle}"></td>
-          </tr>
-          <tr>
-             <td colspan="2" style="padding-top: 6px; padding-bottom: 2px;">Accrual period</td>
-          </tr>
-          <tr>
-             <td colspan="2" style="padding-bottom: 10px;">
+             <td style="padding-bottom: 2px;">Accrual period</td>
+             <td style="padding-bottom: 2px;">
                <select disabled style="${selectStyle}">
                  <option>${capPeriod}</option>
                </select>
              </td>
           </tr>
           <tr>
-             <td style="padding-bottom: 6px;">Hour<u>s</u> accrued at ${displayPeriod}</td>
-             <td style="padding-bottom: 6px;"><input type="text" readonly value="${accHours}" style="${inputStyle}"></td>
+             <td style="padding-bottom: 2px;">Hour<u>s</u> accrued at ${displayPeriod}</td>
+             <td style="padding-bottom: 2px;"><input type="text" readonly value="${accHours}" style="${inputStyle}"></td>
           </tr>
           <tr>
              <td><u>M</u>aximum number of hours</td>
