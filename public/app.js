@@ -551,7 +551,7 @@ async function loadEmployeeDetails(hotel, employee) {
             <div style="font-weight:bold; font-size:1.4rem;">${amtStr}</div>
           </div>
           <div style="text-align:center; padding:0 8px; border-left:1px solid #ccc;">
-            <div style="font-size:0.75rem; text-transform:uppercase; color:#666; margin-bottom:4px; height:32px; display:flex; align-items:flex-end; justify-content:center; line-height:1.1;">Vacation Used in ${currentYear}</div>
+            <div style="font-size:0.75rem; text-transform:uppercase; color:#666; margin-bottom:4px; height:32px; display:flex; align-items:flex-end; justify-content:center; line-height:1.1;">QB Vacation Used in ${currentYear}</div>
             <div style="font-weight:bold; font-size:1.4rem;">${hrsStr}</div>
           </div>
           <div style="text-align:center; padding:0 8px; border-left:1px solid #ccc;">
@@ -1381,29 +1381,35 @@ window.deleteEntry = async (id) => {
   if (!confirm("Delete this entry?")) return;
   const r = await apiDelete(`/api/manual-entry/${id}`);
   if (r.ok) {
-    // Reload history (trick: trigger change or re-call)
-    const hotel = document.getElementById("entryHotel").value;
-    const emp = document.getElementById("entryEmployee").value;
+    const hotel = document.getElementById("entryHotel")?.value || document.getElementById("tab2Hotel")?.value;
+    const emp = document.getElementById("entryEmployee")?.value || document.getElementById("tab2Employee")?.value;
     if (hotel && emp) {
-      loadEntryHistory(hotel, emp);
-      refreshAfterManualChange(hotel, emp);
+      localStorage.setItem("lastSavedHotel", hotel);
+      localStorage.setItem("lastSavedEmployee", emp);
     }
+    window.location.reload();
   } else {
     alert("Error: " + r.error);
   }
 };
 
 
-window.refreshAfterManualChange = async function (hotel, employee) {
-  // 1. Refresh Warnings (Sidebar)
-  loadAllEmployeeWarnings(hotel);
-
-  // 2. Refresh Employee Details Tab (if that employee is currently selected)
-  const detHotel = document.getElementById("tab2Hotel");
-  const detEmp = document.getElementById("tab2Employee");
-  if (detHotel && detEmp && detHotel.value === hotel && detEmp.value === employee) {
-    loadEmployeeDetails(hotel, employee);
+window.refreshAfterManualChange = window.refreshAfterManualChange || async function (hotel, employee) {
+  // Save selections to persist across hard reload
+  if (hotel && employee) {
+    localStorage.setItem("lastSavedHotel", hotel);
+    localStorage.setItem("lastSavedEmployee", employee);
+  } else {
+    const tabHotel = document.getElementById("tab2Hotel")?.value;
+    const tabEmp = document.getElementById("tab2Employee")?.value;
+    if (tabHotel && tabEmp) {
+      localStorage.setItem("lastSavedHotel", tabHotel);
+      localStorage.setItem("lastSavedEmployee", tabEmp);
+    }
   }
+  
+  // Force Hard Refresh per User Request
+  window.location.reload();
 };
 
 window.openEditEntryModal = (id, from, to, type, days, note, allocYear) => {
