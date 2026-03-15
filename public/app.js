@@ -685,8 +685,8 @@ async function loadEmployeeDetails(hotel, employee) {
     const displayPeriod = accPeriod.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
     const capPeriod = displayPeriod.charAt(0).toUpperCase() + displayPeriod.slice(1);
 
-    // Hide Sick Logic: If 0 accrued
-    if (accHoursNum === 0) {
+    // Hide Sick Logic: If explicitly 0 configured by QB
+    if (cb.sick_hours_accrued != null && Number(cb.sick_hours_accrued) === 0) {
       document.getElementById("sickCardWrapper").style.display = "none";
       document.getElementById("accrualCardWrapper").style.display = "none";
     }
