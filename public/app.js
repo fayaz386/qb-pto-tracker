@@ -3174,6 +3174,14 @@ async function initDeductionsTab() {
     };
   }
 
+  const hotelSel = document.getElementById("deductionHotel");
+  if(hotelSel) {
+     hotelSel.addEventListener("change", () => {
+         loadDeductionPeriods();
+         document.getElementById("deductionSummaryCard").style.display = "none";
+     });
+  }
+
   const btnSync = document.getElementById("syncDeductionBtn");
   if(btnSync) {
     btnSync.onclick = async () => {
@@ -3332,6 +3340,7 @@ async function loadDeductionSummary(payrollDateId) {
         <div style="margin-top:20px;">Employees Paid: <span style="font-weight:normal">${d.employees_paid}</span></div>
         <div style="margin-top:20px;">Gross Pay: <span style="font-weight:normal">${fmtVal(d.gross_pay)}</span></div>
         <div style="margin-top:10px;">Net Pay: <span style="font-weight:normal">${fmtVal(d.net_pay)}</span></div>
+        <div style="margin-top:20px; font-weight:bold; font-size:1.1em;">Amount Owing = <span style="color:#d32f2f;">${fmtVal(grandTotal)}</span></div>
      `;
    } catch(e) {
      tbody.innerHTML = `<tr><td colspan='4' class="error">${e.message}</td></tr>`;
@@ -3353,7 +3362,7 @@ if(printBtn) {
       printWin.document.write(`
         <html>
           <head>
-            <title>Payroll Tax Summary</title>
+            <title>Payroll Deduction Summary</title>
             <style>
               body { font-family: "Segoe UI", Arial, sans-serif; color: #333; padding: 20px; }
               table { width: 100%; border-collapse: collapse; margin-top: 20px; }
