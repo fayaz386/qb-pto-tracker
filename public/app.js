@@ -259,6 +259,92 @@ function renderEmployeeDetailsTable(payload) {
       <div class="profile-item"><label>Email</label><span>${esc(emp.email || "—")}</span></div>
       <div class="profile-item" style="grid-column: span 2;"><label>Address</label><span>${esc(emp.address || "—")}</span></div>
     </div>
+    
+    <div style="background:#fff; border:1px solid #eee; border-radius:4px; padding:15px; margin-bottom:20px;">
+      <h3 style="margin-top:0; font-size:14px; margin-bottom:10px;">Work Status</h3>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+        <div class="field" style="flex:1; min-width:150px;">
+          <label>Status (QB: ${emp.is_active === false ? 'Inactive' : 'Active'})</label>
+          <select id="empWorkStatus" onchange="window.toggleInactiveFields()">
+            <option value="Active" ${(!emp.work_status && emp.is_active !== false) || emp.work_status === 'Active' ? 'selected' : ''}>Active</option>
+            <option value="Inactive" ${(!emp.work_status && emp.is_active === false) || emp.work_status === 'Inactive' ? 'selected' : ''}>Inactive</option>
+          </select>
+        </div>
+        
+        <div class="field" style="flex:1; min-width:150px;" id="inactiveReasonWrap">
+          <label>Reason</label>
+          <select id="empInactiveReason">
+            <option value="">Select...</option>
+            <option value="Resigned" ${emp.inactive_reason === 'Resigned' ? 'selected' : ''}>Resigned</option>
+            <option value="Terminated" ${emp.inactive_reason === 'Terminated' ? 'selected' : ''}>Terminated</option>
+            <option value="Retired" ${emp.inactive_reason === 'Retired' ? 'selected' : ''}>Retired</option>
+            <option value="Other" ${emp.inactive_reason === 'Other' ? 'selected' : ''}>Other</option>
+          </select>
+        </div>
+
+        <div class="field" style="flex:1; min-width:150px;" id="lastDayWrap">
+          <label>Last Day <span style="color:red;">*</span></label>
+          <input type="date" id="empLastDay" value="${esc(emp.last_day || '')}">
+        </div>
+
+        <div class="field" style="flex:2; min-width:200px;" id="inactiveNoteWrap">
+          <label>Note</label>
+          <input type="text" id="empInactiveNote" value="${esc(emp.inactive_note || '')}" placeholder="Further details...">
+        </div>
+
+        <div>
+          <button class="btnPrimary" onclick="window.saveEmployeeStatus('${esc(emp.employee_key)}')">Save Status</button>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      window.toggleInactiveFields = function() {
+        const ws = document.getElementById('empWorkStatus');
+        const rWrap = document.getElementById('inactiveReasonWrap');
+        const lWrap = document.getElementById('lastDayWrap');
+        const nWrap = document.getElementById('inactiveNoteWrap');
+        if (ws && rWrap && lWrap && nWrap) {
+          const isInactive = ws.value === 'Inactive';
+          rWrap.style.display = isInactive ? 'block' : 'none';
+          lWrap.style.display = isInactive ? 'block' : 'none';
+          nWrap.style.display = isInactive ? 'block' : 'none';
+        }
+      };
+      
+      // Call it initially to set correct state
+      setTimeout(() => { if (window.toggleInactiveFields) window.toggleInactiveFields(); }, 50);
+      
+      window.saveEmployeeStatus = async function(empKey) {
+        const ws = document.getElementById('empWorkStatus').value;
+        const reason = document.getElementById('empInactiveReason').value;
+        const lastDay = document.getElementById('empLastDay').value;
+        const note = document.getElementById('empInactiveNote').value;
+        
+        if (ws === 'Inactive' && !lastDay) {
+          alert('Last Day must be completed when status is Inactive.');
+          return;
+        }
+        
+        try {
+          const res = await fetch('/api/employees/' + encodeURIComponent(empKey), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              work_status: ws, 
+              inactive_reason: reason, 
+              inactive_note: note, 
+              last_day: lastDay 
+            })
+          });
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error);
+          alert('Status updated successfully');
+        } catch (e) {
+          alert('Error: ' + e.message);
+        }
+      };
+    </script>
   `);
 
 
@@ -985,32 +1071,50 @@ async function loadAllEmployeeWarnings(hotel) {
     }
   }
 
-  // Sort by Excess Descending, then Name
+  // Sort by Employee Name, then Excess
   warnings.sort((a, b) => {
-    // Primary: Excess (Highest first)
-    const diff = b.excess - a.excess;
-    if (Math.abs(diff) > 0.01) return diff;
-    // Secondary: Name
-    return a.sortName.localeCompare(b.sortName);
+    // Primary: Name
+    const nameCmp = a.sortName.localeCompare(b.sortName);
+    if (nameCmp !== 0) return nameCmp;
+    // Secondary: Excess
+    return b.excess - a.excess;
   });
 
   side.style.display = "block";
 
   if (warnings.length > 0) {
-    list.innerHTML = warnings.map(w => {
-      let badgeClass = 'badge-blue';
-      if (w.type === 'Sick') badgeClass = 'badge-yellow';
-      if (w.type === 'Vacation') badgeClass = 'badge-green'; // Distinct color for Vacation
-      if (w.type === 'Birthday') badgeClass = 'badge-red'; // Custom Red for Birthday
+    let groupedHtml = "";
+    let currentEmp = null;
 
-      return `
-      <div class="listRow" style="padding:8px 10px;">
-        <div style="flex:1;">
-           <div><span style="font-weight:600;">${esc(w.emp)}</span> <span class="badge ${badgeClass}" style="${w.type === 'Birthday' ? 'background:#d32f2f; color:white;' : ''} margin-left:6px;font-size:0.75em;padding:2px 6px;">${w.type}</span></div>
-           <div class="${w.isOver ? 'flash-severe' : 'flash-warning'}" style="margin-top:4px; font-size:0.9em; font-weight:500; padding:2px 4px; display:inline-block;">${esc(w.msg)}</div>
+    for (const w of warnings) {
+      if (w.emp !== currentEmp) {
+        if (currentEmp !== null) groupedHtml += `</div></div>`;
+        currentEmp = w.emp;
+        groupedHtml += `<div class="listRow" style="padding:10px; display:block;"><div style="font-weight:700; font-size:1.05em; border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:6px;">${esc(currentEmp)}</div><div style="display:flex; flex-direction:column; gap:6px;">`;
+      }
+
+      let badgeClass = 'badge-blue';
+      let badgeStyle = 'font-size:0.75em;padding:4px 8px;border-radius:4px;';
+      if (w.type === 'Sick') {
+        badgeStyle += ' background:#0b2660; color:white; font-size:1em; font-weight:bold; letter-spacing:0.5px;';
+      } else if (w.type === 'Vacation') {
+        badgeClass = 'badge-green';
+      } else if (w.type === 'Birthday') {
+        badgeStyle += ' background:#d32f2f; color:white;';
+      }
+
+      let flashClass = w.isOver ? 'flash-severe' : 'flash-warning';
+      if (w.type === 'Sick') flashClass = 'flash-sick';
+
+      groupedHtml += `
+        <div style="display:flex; align-items:center;">
+           <span class="badge ${badgeClass}" style="${badgeStyle}">${w.type === 'Sick' ? 'SICK' : w.type}</span>
+           <div class="${flashClass}" style="margin-left:8px; font-size:0.9em; font-weight:500; display:inline-block;">${esc(w.msg)}</div>
         </div>
-      </div>
-    `}).join("");
+      `;
+    }
+    if (currentEmp !== null) groupedHtml += `</div></div>`;
+    list.innerHTML = groupedHtml;
   } else {
     list.innerHTML = `<div style="color:#666;">No notifications found for this hotel.</div>`;
   }

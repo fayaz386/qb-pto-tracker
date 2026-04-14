@@ -1,0 +1,5 @@
+is_global = true
+build_property.RootNamespace = qb_connector
+build_property.ProjectDir = C:\qb-pto-tracker\qb-connector\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 

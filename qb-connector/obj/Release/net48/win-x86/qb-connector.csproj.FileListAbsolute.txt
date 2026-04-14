@@ -1,0 +1,11 @@
+C:\qb-pto-tracker\qb-connector\bin\Release\net48\win-x86\qb-connector.exe.config
+C:\qb-pto-tracker\qb-connector\bin\Release\net48\win-x86\qb-connector.exe
+C:\qb-pto-tracker\qb-connector\bin\Release\net48\win-x86\qb-connector.pdb
+C:\qb-pto-tracker\qb-connector\obj\Release\net48\win-x86\qb-connector.csproj.AssemblyReference.cache
+C:\qb-pto-tracker\qb-connector\obj\Release\net48\win-x86\qb-connector.GeneratedMSBuildEditorConfig.editorconfig
+C:\qb-pto-tracker\qb-connector\obj\Release\net48\win-x86\qb-connector.AssemblyInfoInputs.cache
+C:\qb-pto-tracker\qb-connector\obj\Release\net48\win-x86\qb-connector.AssemblyInfo.cs
+C:\qb-pto-tracker\qb-connector\obj\Release\net48\win-x86\qb-connector.csproj.CoreCompileInputs.cache
+C:\qb-pto-tracker\qb-connector\obj\Release\net48\win-x86\qb-connector.sourcelink.json
+C:\qb-pto-tracker\qb-connector\obj\Release\net48\win-x86\qb-connector.exe
+C:\qb-pto-tracker\qb-connector\obj\Release\net48\win-x86\qb-connector.pdb

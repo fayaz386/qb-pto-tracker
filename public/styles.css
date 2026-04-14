@@ -599,6 +599,28 @@ a.openCsv:hover {
   /* Ensure transform works */
 }
 
+@keyframes flashDarkBlue {
+  0%,
+  100% {
+    background-color: white;
+    color: inherit;
+    transform: scale(1);
+  }
+  50% {
+    background-color: #0b2660; /* Dark blue */
+    color: #fff;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.flash-sick {
+  animation: flashDarkBlue 1.2s infinite ease-in-out;
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: inline-block;
+}
+
 /* Column Resizing */
 .resizer {
   position: absolute;

@@ -107,6 +107,26 @@ app.delete("/api/employee-notes/:id", authMiddleware, async (req, res) => {
   }
 });
 
+// Update Employee Profile
+app.put("/api/employees/:employee_key", authMiddleware, async (req, res) => {
+  const empKey = req.params.employee_key;
+  const { work_status, inactive_reason, inactive_note, last_day } = req.body;
+  try {
+    const r = await pool.query(
+      `UPDATE employees SET 
+        work_status = COALESCE($1, work_status), 
+        inactive_reason = COALESCE($2, inactive_reason), 
+        inactive_note = COALESCE($3, inactive_note), 
+        last_day = COALESCE($4, last_day)
+      WHERE employee_key = $5 RETURNING *`,
+      [work_status, inactive_reason, inactive_note, last_day, empKey]
+    );
+    res.json({ ok: true, row: r.rows[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 const PORT = Number(process.env.PORT || 8085);
 
 const pool = new Pool({
@@ -152,6 +172,10 @@ async function ensureSchema() {
      ALTER TABLE employees ADD COLUMN IF NOT EXISTS sick_max_hours NUMERIC DEFAULT 0;
      ALTER TABLE employees ADD COLUMN IF NOT EXISTS sick_reset_yearly BOOLEAN DEFAULT false;
      ALTER TABLE employees ADD COLUMN IF NOT EXISTS sick_hours_used NUMERIC DEFAULT 0;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS work_status TEXT;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS inactive_reason TEXT;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS inactive_note TEXT;
+     ALTER TABLE employees ADD COLUMN IF NOT EXISTS last_day TEXT;
    `);
 }
 
@@ -1043,7 +1067,8 @@ app.get("/api/employee-details", async (req, res) => {
         sick_accrual_period: emp.sick_accrual_period,
         sick_hours_accrued: emp.sick_hours_accrued != null ? Number(emp.sick_hours_accrued) : null,
         sick_max_hours: emp.sick_max_hours != null ? Number(emp.sick_max_hours) : null,
-        sick_reset_yearly: emp.sick_reset_yearly
+        sick_reset_yearly: emp.sick_reset_yearly,
+        sick_hours_used_accrual: emp.sick_hours_used != null ? Number(emp.sick_hours_used) : null
       },
       history: visibleReports.slice(0, 50), // Limit returned history to 50
     });
