@@ -3229,9 +3229,9 @@ async function loadDeductionYears() {
   try {
      const r = await apiGet("/api/settings/years");
      const sel = document.getElementById("deductionYear");
-     if(sel && r.ok) {
+     if(sel && r.ok && r.years) {
         const currentYear = new Date().getFullYear();
-        sel.innerHTML = '<option value="">Select year...</option>' + r.rows.map(y => `<option value="${y.year}" ${y.year === currentYear ? 'selected':''}>${y.year}</option>`).join("");
+        sel.innerHTML = '<option value="">Select year...</option>' + r.years.map(y => `<option value="${y}" ${y === currentYear ? 'selected':''}>${y}</option>`).join("");
      }
   } catch (e) { console.error(e); }
 }
