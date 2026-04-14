@@ -2817,10 +2817,11 @@ function parseCSVBuffer(buffer) {
 }
 
 function extractCurrency(val) {
-  if (val === undefined || val === null) return 0;
+  if (val === undefined || val === null) return null;
   const cleaned = String(val).replace(/[$,\s]/g, "");
+  if (cleaned === "") return null;
   const n = parseFloat(cleaned);
-  return isNaN(n) ? 0 : n;
+  return isNaN(n) ? null : n;
 }
 
 app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', maxCount: 1}, {name: 'summary', maxCount: 1}]), async (req, res) => {
@@ -2845,17 +2846,49 @@ app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', m
       net_pay: 0
     };
 
+    const findValueInRow = (row, keyword) => {
+      const keywordLower = keyword.toLowerCase();
+      const strRow = row.join(",").toLowerCase();
+      if (strRow.includes(keywordLower)) {
+         let kwIdx = -1;
+         for (let i = 0; i < row.length; i++) {
+            if (String(row[i]).toLowerCase().includes(keywordLower)) {
+               kwIdx = i;
+               break;
+            }
+         }
+         if (kwIdx > -1) {
+             for (let j = kwIdx + 1; j < row.length; j++) {
+                 const val = extractCurrency(row[j]);
+                 if (val !== null) return val;
+             }
+         }
+      }
+      return null;
+    };
+
     pd7aRecords.forEach(row => {
-      const col0 = String(row[0] || "").trim();
-      const col1 = row.length > 1 ? row[1] : "";
+      let val;
+      val = findValueInRow(row, "tax deductions");
+      if (val !== null) data.fed_tax = val;
       
-      if (col0.startsWith("Tax deductions")) data.fed_tax = extractCurrency(col1);
-      else if (col0.startsWith("CPP - Employee")) data.cpp_employee = extractCurrency(col1);
-      else if (col0.startsWith("CPP - Company")) data.cpp_company = extractCurrency(col1);
-      else if (col0.startsWith("EI - Employee")) data.ei_employee = extractCurrency(col1);
-      else if (col0.startsWith("EI - Company")) data.ei_company = extractCurrency(col1);
-      else if (col0.startsWith("No. of employees paid")) data.employees_paid = parseInt(extractCurrency(col1));
-      else if (col0.startsWith("Gross payroll for period")) data.gross_pay = extractCurrency(col1);
+      val = findValueInRow(row, "cpp - employee");
+      if (val !== null) data.cpp_employee = val;
+      
+      val = findValueInRow(row, "cpp - company");
+      if (val !== null) data.cpp_company = val;
+      
+      val = findValueInRow(row, "ei - employee");
+      if (val !== null) data.ei_employee = val;
+      
+      val = findValueInRow(row, "ei - company");
+      if (val !== null) data.ei_company = val;
+      
+      val = findValueInRow(row, "no. of employees");
+      if (val !== null) data.employees_paid = parseInt(val);
+      
+      val = findValueInRow(row, "gross payroll");
+      if (val !== null) data.gross_pay = val;
     });
 
     summaryRecords.forEach(row => {
@@ -2863,13 +2896,13 @@ app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', m
       if (strRow.includes("net pay") && !strRow.includes("gross")) {
         for(let i=1; i<row.length; i++) {
             let val = extractCurrency(row[i]);
-            if (val > 0) { data.net_pay = val; break; }
+            if (val !== null && val > 0) { data.net_pay = val; break; }
         }
       }
       if (strRow.includes("gross pay") && !strRow.includes("adjusted") && !strRow.includes("total")) {
         for(let i=1; i<row.length; i++) {
             let val = extractCurrency(row[i]);
-            if (val > 0 && data.gross_pay === 0) { data.gross_pay = val; break; }
+            if (val !== null && val > 0 && data.gross_pay === 0) { data.gross_pay = val; break; }
         }
       }
     });
