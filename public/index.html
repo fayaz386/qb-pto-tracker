@@ -33,6 +33,7 @@
       <button class="navTab" id="tab3" type="button">Input Entry</button>
       <button class="navTab" id="tab4" type="button">Settings</button>
       <button class="navTab" id="tabReports" type="button">Reports</button>
+      <button class="navTab" id="tabDeductions" type="button">Deduction Payment</button>
       <button class="navTab" id="tabUsers" type="button" style="display:none;">Users</button>
       <button class="navTab" id="globalRefreshBtn" type="button" style="margin-left:auto; margin-right:8px;">↻
         Refresh</button>
@@ -491,6 +492,122 @@
               </table>
             </div>
             <div id="reportsStatus" class="status"></div>
+          </div>
+        </section>
+
+        <!-- TAB DEDUCTIONS -->
+        <section id="pageDeductions" class="page hidden">
+          <div class="pageHeader">
+            <h1 class="pageTitle">Deduction Payment</h1>
+          </div>
+
+          <div class="card">
+            <div class="cardHead">
+              <h2>Payroll Dates & Configuration</h2>
+              <div class="muted">Select or create a payroll period to track deductions.</div>
+            </div>
+            <div class="grid3">
+              <div class="field">
+                <label>Hotel</label>
+                <select id="deductionHotel">
+                  <option value="">Select hotel...</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Year</label>
+                <select id="deductionYear">
+                  <option value="">Select year...</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Payroll #</label>
+                <input type="text" id="deductionPayrollNo" placeholder="e.g. 08" />
+              </div>
+              <div class="field">
+                <label>Period Start Date</label>
+                <input type="date" id="deductionPeriodStart" />
+              </div>
+              <div class="field">
+                <label>Period End Date</label>
+                <input type="date" id="deductionPeriodEnd" />
+              </div>
+              <div class="field">
+                <label>Pay Date</label>
+                <input type="date" id="deductionPayDate" />
+              </div>
+            </div>
+            <div class="actions" style="margin-top:12px;">
+              <button id="savePayrollDateBtn" class="btnPrimary">Save Payroll Date</button>
+              <button id="deletePayrollDateBtn" class="btnDangerSmall" style="display:none; margin-left:10px;">Delete</button>
+              <span id="payrollDateStatus" class="status" style="margin-left:10px;"></span>
+            </div>
+            
+            <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+              <div class="field" style="max-width:300px;">
+                <label>Select Saved Payroll Period</label>
+                <select id="deductionPeriodSelect">
+                  <option value="">Choose...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload section (Sync) -->
+          <div class="card" style="border-left: 4px solid #1976d2;" id="deductionSyncCard">
+            <div class="cardHead">
+              <h2 style="color:#1976d2">Deduction Sync (QuickBooks Exports)</h2>
+              <div class="muted">Upload the PD7A CSV and QB-Pay Summary Bi-Weekly CSV to generate the Deduction Payment Summary.</div>
+            </div>
+            <div class="grid2" style="align-items:end;">
+              <div class="field">
+                <label>PD7A File (.csv)</label>
+                <input type="file" id="pd7aFile" accept=".csv" />
+              </div>
+              <div class="field">
+                <label>Payroll Summary File (.csv)</label>
+                <input type="file" id="qbSummaryFile" accept=".csv" />
+              </div>
+            </div>
+            <div class="actions" style="margin-top:12px;">
+              <button id="syncDeductionBtn" class="btnPrimary">Sync Deductions</button>
+              <span id="syncDeductionStatus" class="status" style="margin-left:10px;"></span>
+            </div>
+          </div>
+
+          <!-- Summary Table -->
+          <div class="card" id="deductionSummaryCard" style="display:none;">
+            <div class="cardHead rowBetween">
+              <div>
+                 <h2>Payroll Tax Summary</h2>
+                 <div class="muted" id="deductionSummarySubtitle"></div>
+              </div>
+              <button id="printSummaryBtn" class="btn">Print Preview</button>
+            </div>
+            
+            <div class="tableWrap" id="deductionPrintArea">
+              <div id="deductionPrintHeader" style="display:none; margin-bottom: 20px;">
+                 <h2 id="printHotelName"></h2>
+                 <h3 id="printPayrollDetails"></h3>
+                 <p id="printPeriodDetails"></p>
+                 <p id="printPayDate"></p>
+              </div>
+              <table class="table" id="deductionSummaryTable" style="max-width: 800px; border-collapse: collapse;">
+                <thead>
+                  <tr style="background-color: #f1f3f5;">
+                    <th></th>
+                    <th class="num" style="text-align:right">EMPLOYEE DEDUCTION</th>
+                    <th class="num" style="text-align:right">EMPLOYER DEDUCTION</th>
+                    <th class="num" style="text-align:right">TOTAL DUE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Filled by JS -->
+                </tbody>
+              </table>
+              <div style="margin-top: 20px; font-weight: 500;" id="deductionSummaryExtras">
+                 <!-- Employees Paid, Gross Pay, Net Pay -->
+              </div>
+            </div>
           </div>
         </section>
 

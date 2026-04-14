@@ -240,6 +240,32 @@ async function ensureSettingsTables() {
       created_by TEXT,
       created_at TIMESTAMPTZ DEFAULT now()
     );
+
+    CREATE TABLE IF NOT EXISTS payroll_dates (
+      id SERIAL PRIMARY KEY,
+      hotel TEXT NOT NULL,
+      year INTEGER NOT NULL,
+      payroll_no TEXT,
+      pay_date DATE,
+      period_start DATE,
+      period_end DATE,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS deduction_payments (
+      id SERIAL PRIMARY KEY,
+      hotel TEXT NOT NULL,
+      payroll_date_id INTEGER REFERENCES payroll_dates(id) ON DELETE CASCADE,
+      ei_employee NUMERIC,
+      ei_company NUMERIC,
+      cpp_employee NUMERIC,
+      cpp_company NUMERIC,
+      fed_tax NUMERIC,
+      employees_paid INTEGER,
+      gross_pay NUMERIC,
+      net_pay NUMERIC,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
   `);
   try { await pool.query(`ALTER TABLE settings_types ADD COLUMN IF NOT EXISTS max_allowed NUMERIC`); } catch (e) { }
   try { await pool.query(`ALTER TABLE settings_types ADD COLUMN IF NOT EXISTS min_allowed NUMERIC`); } catch (e) { }
@@ -2735,6 +2761,141 @@ app.get("/api/settings/sessions", requireAdmin, async (req, res) => {
     res.json({ ok: true, sessions: r.rows });
   } catch (e) {
     res.status(500).json({ ok: false, message: e.message });
+  }
+});
+
+// --- DEDUCTION PAYMENTS & PAYROLL DATES ---
+
+app.get("/api/payroll-dates", authMiddleware, async (req, res) => {
+  const { hotel, year } = req.query;
+  try {
+    let q = "SELECT * FROM payroll_dates WHERE 1=1";
+    let params = [];
+    if (hotel) { params.push(hotel); q += ` AND hotel = $${params.length}`; }
+    if (year) { params.push(year); q += ` AND year = $${params.length}`; }
+    q += " ORDER BY year DESC, payroll_no DESC";
+    const r = await pool.query(q, params);
+    res.json({ ok: true, rows: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post("/api/payroll-dates", authMiddleware, async (req, res) => {
+  const { hotel, year, payroll_no, pay_date, period_start, period_end } = req.body;
+  if (!hotel || !year || !payroll_no) return res.status(400).json({ error: "Missing fields" });
+  try {
+    const r = await pool.query(`
+      INSERT INTO payroll_dates (hotel, year, payroll_no, pay_date, period_start, period_end)
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [hotel, year, payroll_no, pay_date || null, period_start || null, period_end || null]
+    );
+    res.json({ ok: true, row: r.rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete("/api/payroll-dates/:id", authMiddleware, async (req, res) => {
+  try {
+    await pool.query("DELETE FROM payroll_dates WHERE id = $1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get("/api/deduction-summary", authMiddleware, async (req, res) => {
+  const { payroll_date_id } = req.query;
+  try {
+    const r = await pool.query(`SELECT * FROM deduction_payments WHERE payroll_date_id = $1 ORDER BY created_at DESC`, [payroll_date_id]);
+    res.json({ ok: true, rows: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+function parseCSVBuffer(buffer) {
+  return new Promise((resolve, reject) => {
+    parse(buffer.toString('utf8'), { relax_column_count: true }, (err, records) => {
+      if (err) return reject(err);
+      resolve(records);
+    });
+  });
+}
+
+function extractCurrency(val) {
+  if (val === undefined || val === null) return 0;
+  const cleaned = String(val).replace(/[$,\s]/g, "");
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', maxCount: 1}, {name: 'summary', maxCount: 1}]), async (req, res) => {
+  const { hotel, payroll_date_id } = req.body;
+  const files = req.files;
+
+  if (!hotel || !payroll_date_id) return res.status(400).json({ error: "Missing hotel or payroll date" });
+  if (!files || !files.pd7a || !files.summary) return res.status(400).json({ error: "Missing pd7a or summary CSV files" });
+
+  try {
+    const pd7aRecords = await parseCSVBuffer(files.pd7a[0].buffer);
+    const summaryRecords = await parseCSVBuffer(files.summary[0].buffer);
+
+    let data = {
+      fed_tax: 0,
+      cpp_employee: 0, 
+      cpp_company: 0,
+      ei_employee: 0,
+      ei_company: 0,
+      employees_paid: 0,
+      gross_pay: 0,
+      net_pay: 0
+    };
+
+    pd7aRecords.forEach(row => {
+      const col0 = String(row[0] || "").trim();
+      const col1 = row.length > 1 ? row[1] : "";
+      
+      if (col0.startsWith("Tax deductions")) data.fed_tax = extractCurrency(col1);
+      else if (col0.startsWith("CPP - Employee")) data.cpp_employee = extractCurrency(col1);
+      else if (col0.startsWith("CPP - Company")) data.cpp_company = extractCurrency(col1);
+      else if (col0.startsWith("EI - Employee")) data.ei_employee = extractCurrency(col1);
+      else if (col0.startsWith("EI - Company")) data.ei_company = extractCurrency(col1);
+      else if (col0.startsWith("No. of employees paid")) data.employees_paid = parseInt(extractCurrency(col1));
+      else if (col0.startsWith("Gross payroll for period")) data.gross_pay = extractCurrency(col1);
+    });
+
+    summaryRecords.forEach(row => {
+      const strRow = row.join(",").toLowerCase();
+      if (strRow.includes("net pay") && !strRow.includes("gross")) {
+        for(let i=1; i<row.length; i++) {
+            let val = extractCurrency(row[i]);
+            if (val > 0) { data.net_pay = val; break; }
+        }
+      }
+      if (strRow.includes("gross pay") && !strRow.includes("adjusted") && !strRow.includes("total")) {
+        for(let i=1; i<row.length; i++) {
+            let val = extractCurrency(row[i]);
+            if (val > 0 && data.gross_pay === 0) { data.gross_pay = val; break; }
+        }
+      }
+    });
+
+    // Delete existing records for this payroll_date_id
+    await pool.query(`DELETE FROM deduction_payments WHERE payroll_date_id = $1`, [payroll_date_id]);
+
+    const q = `
+      INSERT INTO deduction_payments 
+      (hotel, payroll_date_id, ei_employee, ei_company, cpp_employee, cpp_company, fed_tax, employees_paid, gross_pay, net_pay)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *
+    `;
+    const inserted = await pool.query(q, [
+      hotel, payroll_date_id, 
+      data.ei_employee, data.ei_company, 
+      data.cpp_employee, data.cpp_company, 
+      data.fed_tax, data.employees_paid, 
+      data.gross_pay, data.net_pay
+    ]);
+
+    res.json({ ok: true, data: data, row: inserted.rows[0] });
+
+  } catch (e) {
+    console.error("Deduction Sync Error:", e);
+    res.status(500).json({ error: e.message });
   }
 });
 

@@ -112,21 +112,23 @@ const tab2 = document.getElementById("tab2");
 const tab3 = document.getElementById("tab3");
 const tab4 = document.getElementById("tab4");
 const tabReports = document.getElementById("tabReports");
+const tabDeductions = document.getElementById("tabDeductions");
 
 const pageImport = document.getElementById("pageImport");
 const pageTab2 = document.getElementById("pageTab2");
 const pageEntry = document.getElementById("pageEntry");
 const pageSettings = document.getElementById("pageSettings");
 const pageReports = document.getElementById("pageReports");
+const pageDeductions = document.getElementById("pageDeductions");
 const pageUsers = document.getElementById("pageUsers");
 
 function showOnly(pageToShow) {
-  [pageImport, pageTab2, pageEntry, pageSettings, pageReports, pageUsers].forEach(p => p && p.classList.add("hidden"));
+  [pageImport, pageTab2, pageEntry, pageSettings, pageReports, pageDeductions, pageUsers].forEach(p => p && p.classList.add("hidden"));
   if (pageToShow) pageToShow.classList.remove("hidden");
 }
 
 function setActiveButton(btn) {
-  [tabImport, tab2, tab3, tab4, tabReports, tabUsers].forEach(b => b && b.classList.remove("active"));
+  [tabImport, tab2, tab3, tab4, tabReports, tabDeductions, tabUsers].forEach(b => b && b.classList.remove("active"));
   if (btn) btn.classList.add("active");
 }
 
@@ -146,6 +148,10 @@ function setActiveTab(which) {
   } else if (which === "tabReports") {
     setActiveButton(tabReports);
     showOnly(pageReports);
+  } else if (which === "tabDeductions") {
+    setActiveButton(tabDeductions);
+    showOnly(pageDeductions);
+    initDeductionsTab();
   } else if (which === "tabUsers") {
     setActiveButton(tabUsers);
     showOnly(pageUsers);
@@ -161,6 +167,7 @@ tab2.addEventListener("click", () => setActiveTab("tab2"));
 tab3.addEventListener("click", () => setActiveTab("tab3"));
 tab4.addEventListener("click", () => setActiveTab("tab4"));
 if (tabReports) tabReports.addEventListener("click", () => setActiveTab("tabReports"));
+if (tabDeductions) tabDeductions.addEventListener("click", () => setActiveTab("tabDeductions"));
 const tabUsers = document.getElementById("tabUsers");
 if (tabUsers) tabUsers.addEventListener("click", () => setActiveTab("tabUsers"));
 
@@ -3101,3 +3108,268 @@ window.deleteNote = async (id) => {
 
 // Initialize
 wireNoteModal();
+
+// ============================================
+// DEDUCTION PAYMENT LOGIC
+// ============================================
+
+async function initDeductionsTab() {
+  await loadDeductionHotels();
+  await loadDeductionYears();
+  await loadDeductionPeriods();
+
+  const btnSave = document.getElementById("savePayrollDateBtn");
+  if(btnSave) {
+    btnSave.onclick = async () => {
+       const hotel = document.getElementById("deductionHotel").value;
+       const year = document.getElementById("deductionYear").value;
+       const pno = document.getElementById("deductionPayrollNo").value;
+       const pstart = document.getElementById("deductionPeriodStart").value;
+       const pend = document.getElementById("deductionPeriodEnd").value;
+       const pdate = document.getElementById("deductionPayDate").value;
+
+       if(!hotel || !year || !pno) {
+         document.getElementById("payrollDateStatus").textContent = "Hotel, Year, and Payroll # required.";
+         return;
+       }
+       document.getElementById("payrollDateStatus").textContent = "Saving...";
+       try {
+         const res = await apiPost("/api/payroll-dates", { hotel, year, payroll_no: pno, period_start: pstart, period_end: pend, pay_date: pdate });
+         if(!res.ok) throw new Error(res.error);
+         document.getElementById("payrollDateStatus").textContent = "Saved!";
+         await loadDeductionPeriods();
+         setTimeout(()=>document.getElementById("payrollDateStatus").textContent = "", 3000);
+       } catch (e) {
+         document.getElementById("payrollDateStatus").textContent = "Error: " + e.message;
+       }
+    };
+  }
+
+  const btnDel = document.getElementById("deletePayrollDateBtn");
+  if (btnDel) {
+    btnDel.onclick = async () => {
+       const id = document.getElementById("deductionPeriodSelect").value;
+       if(!id) return;
+       if(!confirm("Delete this payroll period?")) return;
+       try {
+         const res = await apiDelete(`/api/payroll-dates/${id}`);
+         if(!res.ok) throw new Error(res.error);
+         await loadDeductionPeriods();
+         document.getElementById("deductionSummaryCard").style.display = "none";
+       } catch (e) { alert("Error deleting: " + e.message); }
+    };
+  }
+
+  const sel = document.getElementById("deductionPeriodSelect");
+  if(sel) {
+    sel.onchange = async () => {
+      const id = sel.value;
+      if (id) {
+         document.getElementById("deletePayrollDateBtn").style.display = "inline-block";
+         await loadDeductionSummary(id);
+      } else {
+         document.getElementById("deletePayrollDateBtn").style.display = "none";
+         document.getElementById("deductionSummaryCard").style.display = "none";
+      }
+    };
+  }
+
+  const btnSync = document.getElementById("syncDeductionBtn");
+  if(btnSync) {
+    btnSync.onclick = async () => {
+      const id = document.getElementById("deductionPeriodSelect").value;
+      const hotel = document.getElementById("deductionHotel").value;
+      
+      const filePd7a = document.getElementById("pd7aFile").files[0];
+      const fileSummary = document.getElementById("qbSummaryFile").files[0];
+
+      if(!id || !hotel) {
+         alert("Please select a hotel and save/select a Payroll Period first.");
+         return;
+      }
+      if(!filePd7a || !fileSummary) {
+         document.getElementById("syncDeductionStatus").textContent = "Please select both CSV files.";
+         return;
+      }
+
+      document.getElementById("syncDeductionStatus").textContent = "Syncing...";
+      
+      const formData = new FormData();
+      formData.append("hotel", hotel);
+      formData.append("payroll_date_id", id);
+      formData.append("pd7a", filePd7a);
+      formData.append("summary", fileSummary);
+
+      try {
+        const res = await fetch("/api/sync-deductions", { method: "POST", body: formData });
+        const data = await res.json();
+        if(!data.ok) throw new Error(data.error);
+        document.getElementById("syncDeductionStatus").textContent = "Synced successfully!";
+        await loadDeductionSummary(id);
+        setTimeout(()=>document.getElementById("syncDeductionStatus").textContent = "", 3000);
+      } catch (e) {
+        document.getElementById("syncDeductionStatus").textContent = "Error: " + e.message;
+      }
+
+    };
+  }
+}
+
+async function loadDeductionHotels() {
+  try {
+     const r = await apiGet("/api/hotels");
+     const sel = document.getElementById("deductionHotel");
+     if(sel && r.ok) {
+        sel.innerHTML = '<option value="">Select hotel...</option>' + r.hotels.map(h => `<option value="${esc(h)}">${esc(h)}</option>`).join("");
+     }
+  } catch (e) { console.error(e); }
+}
+
+async function loadDeductionYears() {
+  try {
+     const r = await apiGet("/api/settings/years");
+     const sel = document.getElementById("deductionYear");
+     if(sel && r.ok) {
+        const currentYear = new Date().getFullYear();
+        sel.innerHTML = '<option value="">Select year...</option>' + r.rows.map(y => `<option value="${y.year}" ${y.year === currentYear ? 'selected':''}>${y.year}</option>`).join("");
+     }
+  } catch (e) { console.error(e); }
+}
+
+let __deductionPeriods = [];
+async function loadDeductionPeriods() {
+  try {
+    const hotel = document.getElementById("deductionHotel").value || "";
+    let url = "/api/payroll-dates";
+    if(hotel) url += "?hotel=" + encodeURIComponent(hotel);
+    
+    const r = await apiGet(url);
+    const sel = document.getElementById("deductionPeriodSelect");
+    if(sel && r.ok) {
+       __deductionPeriods = r.rows;
+       sel.innerHTML = '<option value="">Choose...</option>' + r.rows.map(p => {
+         const label = `${p.hotel.substring(0, 5)} - Yr ${p.year} - #${p.payroll_no} (Pay Date: ${fmtDate(p.pay_date)})`;
+         return `<option value="${p.id}">${esc(label)}</option>`;
+       }).join("");
+    }
+  } catch (e) { console.error(e); }
+}
+
+function fmtVal(val) {
+   if(val === undefined || val === null || isNaN(val)) return "$0.00";
+   return "$" + Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function loadDeductionSummary(payrollDateId) {
+   document.getElementById("deductionSummaryCard").style.display = "block";
+   const tbody = document.querySelector("#deductionSummaryTable tbody");
+   tbody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
+
+   const p = __deductionPeriods.find(x => x.id == payrollDateId);
+   if(p) {
+      document.getElementById("deductionSummarySubtitle").textContent = `${p.hotel} | Payroll #${p.payroll_no} (${p.year})`;
+      document.getElementById("printHotelName").textContent = p.hotel;
+      document.getElementById("printPayrollDetails").textContent = `Payroll Tax #${p.payroll_no} ${p.year}`;
+      document.getElementById("printPeriodDetails").textContent = `Period: ${fmtDate(p.period_start)} - ${fmtDate(p.period_end)}`;
+      document.getElementById("printPayDate").textContent = `Pay Date ${fmtDate(p.pay_date)}`;
+      
+      // Auto-populate the form to make edits easier
+      document.getElementById("deductionHotel").value = p.hotel;
+      document.getElementById("deductionYear").value = p.year;
+      document.getElementById("deductionPayrollNo").value = p.payroll_no;
+      if(p.period_start) document.getElementById("deductionPeriodStart").value = String(p.period_start).substring(0,10);
+      if(p.period_end) document.getElementById("deductionPeriodEnd").value = String(p.period_end).substring(0,10);
+      if(p.pay_date) document.getElementById("deductionPayDate").value = String(p.pay_date).substring(0,10);
+   }
+
+   try {
+     const r = await apiGet(`/api/deduction-summary?payroll_date_id=${payrollDateId}`);
+     if(!r.ok) throw new Error(r.error);
+
+     if(r.rows.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4' class='muted'>No data. Upload CSVs and sync.</td></tr>";
+        document.getElementById("deductionSummaryExtras").innerHTML = "";
+        return;
+     }
+
+     const d = r.rows[0];
+     
+     const totalEi = Number(d.ei_employee) + Number(d.ei_company);
+     const totalCpp = Number(d.cpp_employee) + Number(d.cpp_company);
+     const totalFed = Number(d.fed_tax);
+     const employeeTotal = Number(d.ei_employee) + Number(d.cpp_employee) + Number(d.fed_tax);
+     const employerTotal = Number(d.ei_company) + Number(d.cpp_company);
+     const grandTotal = employeeTotal + employerTotal;
+
+     tbody.innerHTML = `
+        <tr>
+          <td><strong>EI</strong></td>
+          <td class="num">${fmtVal(d.ei_employee)}</td>
+          <td class="num">${fmtVal(d.ei_company)}</td>
+          <td class="num" style="font-weight:bold;">${fmtVal(totalEi)}</td>
+        </tr>
+        <tr>
+          <td><strong>CPP</strong></td>
+          <td class="num">${fmtVal(d.cpp_employee)}</td>
+          <td class="num">${fmtVal(d.cpp_company)}</td>
+          <td class="num" style="font-weight:bold;">${fmtVal(totalCpp)}</td>
+        </tr>
+        <tr>
+          <td><strong>Federal Income Tax</strong></td>
+          <td class="num">${fmtVal(d.fed_tax)}</td>
+          <td class="num"></td>
+          <td class="num" style="font-weight:bold;">${fmtVal(totalFed)}</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+          <td><strong>Totals</strong></td>
+          <td class="num" style="font-weight:bold;">${fmtVal(employeeTotal)}</td>
+          <td class="num" style="font-weight:bold;">${fmtVal(employerTotal)}</td>
+          <td class="num" style="font-weight:bold; color: #d32f2f;">${fmtVal(grandTotal)}</td>
+        </tr>
+     `;
+
+     document.getElementById("deductionSummaryExtras").innerHTML = `
+        <div style="margin-top:20px;">Employees Paid: <span style="font-weight:normal">${d.employees_paid}</span></div>
+        <div style="margin-top:20px;">Gross Pay: <span style="font-weight:normal">${fmtVal(d.gross_pay)}</span></div>
+        <div style="margin-top:10px;">Net Pay: <span style="font-weight:normal">${fmtVal(d.net_pay)}</span></div>
+     `;
+   } catch(e) {
+     tbody.innerHTML = `<tr><td colspan='4' class="error">${e.message}</td></tr>`;
+   }
+}
+
+// Print Handler
+const printBtn = document.getElementById("printSummaryBtn");
+if(printBtn) {
+   printBtn.addEventListener("click", () => {
+      const pHeader = document.getElementById("deductionPrintHeader");
+      if(pHeader) pHeader.style.display = "block";
+      
+      const content = document.getElementById("deductionPrintArea").innerHTML;
+      
+      if(pHeader) pHeader.style.display = "none";
+
+      const printWin = window.open('', '_blank');
+      printWin.document.write(`
+        <html>
+          <head>
+            <title>Payroll Tax Summary</title>
+            <style>
+              body { font-family: "Segoe UI", Arial, sans-serif; color: #333; padding: 20px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+              th { background-color: #f5f5f5; }
+              .num { text-align: right; }
+              h2, h3, p { margin: 5px 0; }
+            </style>
+          </head>
+          <body>
+            ${content}
+          </body>
+        </html>
+      `);
+      printWin.document.close();
+      printWin.focus();
+      setTimeout(()=> { printWin.print(); printWin.close(); }, 250);
+   });
+}
