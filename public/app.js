@@ -3336,7 +3336,15 @@ async function loadDeductionSummary(payrollDateId) {
         </tr>
      `;
 
-     document.getElementById("deductionSummaryExtras").innerHTML = `
+           let warningHtml = "";
+      if (d.remittance_for_period && Math.abs(Number(d.remittance_for_period) - grandTotal) > 0.01) {
+         warningHtml = \`<div style="margin-top:10px; color: #d32f2f; font-weight:bold; background: #ffebee; padding: 10px; border-radius: 4px;">
+           ⚠️ Warning: PD7A Remittance for period is \${fmtVal(d.remittance_for_period)}. Totals do not match!
+         </div>\`;
+      }
+
+      document.getElementById("deductionSummaryExtras").innerHTML = \`
+         \${warningHtml}
         <div style="margin-top:20px;">Employees Paid: <span style="font-weight:normal">${d.employees_paid}</span></div>
         <div style="margin-top:20px;">Gross Pay: <span style="font-weight:normal">${fmtVal(d.gross_pay)}</span></div>
         <div style="margin-top:10px;">Net Pay: <span style="font-weight:normal">${fmtVal(d.net_pay)}</span></div>

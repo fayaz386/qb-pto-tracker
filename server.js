@@ -274,6 +274,7 @@ async function ensureSettingsTables() {
   try { await pool.query(`ALTER TABLE manual_entries ADD COLUMN IF NOT EXISTS from_date DATE`); } catch (e) { }
   try { await pool.query(`ALTER TABLE manual_entries ADD COLUMN IF NOT EXISTS to_date DATE`); } catch (e) { }
   try { await pool.query(`ALTER TABLE manual_entries ADD COLUMN IF NOT EXISTS allocated_year INTEGER`); } catch (e) { } // New column
+  try { await pool.query(`ALTER TABLE deduction_payments ADD COLUMN IF NOT EXISTS remittance_for_period NUMERIC`); } catch(e) {}
 
 
   // MIGRATION: Update existing global settings (hotel=NULL) to the first default hotel
@@ -2841,18 +2842,36 @@ app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', m
       cpp_company: 0,
       ei_employee: 0,
       ei_company: 0,
+      remittance_for_period: 0,
       employees_paid: 0,
       gross_pay: 0,
       net_pay: 0
     };
 
-    const findValueInRow = (row, keyword) => {
-      const keywordLower = keyword.toLowerCase();
+    const findValueInRow = (row, ...keywords) => {
+      const keywordsLower = keywords.map(k => k.toLowerCase());
       const strRow = row.join(",").toLowerCase();
-      if (strRow.includes(keywordLower)) {
+      
+      let match = true;
+      for (const kw of keywordsLower) {
+          if (!strRow.includes(kw)) {
+              match = false;
+              break;
+          }
+      }
+
+      if (match) {
          let kwIdx = -1;
          for (let i = 0; i < row.length; i++) {
-            if (String(row[i]).toLowerCase().includes(keywordLower)) {
+            const cell = String(row[i]).toLowerCase();
+            let cellMatch = true;
+            for (const kw of keywordsLower) {
+                if (!cell.includes(kw)) {
+                    cellMatch = false;
+                    break;
+                }
+            }
+            if (cellMatch) {
                kwIdx = i;
                break;
             }
@@ -2872,17 +2891,20 @@ app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', m
       val = findValueInRow(row, "tax deductions");
       if (val !== null) data.fed_tax = val;
       
-      val = findValueInRow(row, "cpp - employee");
+      val = findValueInRow(row, "cpp", "employee");
       if (val !== null) data.cpp_employee = val;
       
-      val = findValueInRow(row, "cpp - company");
+      val = findValueInRow(row, "cpp", "company");
       if (val !== null) data.cpp_company = val;
       
-      val = findValueInRow(row, "ei - employee");
+      val = findValueInRow(row, "ei", "employee");
       if (val !== null) data.ei_employee = val;
       
-      val = findValueInRow(row, "ei - company");
+      val = findValueInRow(row, "ei", "company");
       if (val !== null) data.ei_company = val;
+
+      val = findValueInRow(row, "remittance", "period");
+      if (val !== null) data.remittance_for_period = val;
       
       val = findValueInRow(row, "no. of employees");
       if (val !== null) data.employees_paid = parseInt(val);
@@ -2912,15 +2934,15 @@ app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', m
 
     const q = `
       INSERT INTO deduction_payments 
-      (hotel, payroll_date_id, ei_employee, ei_company, cpp_employee, cpp_company, fed_tax, employees_paid, gross_pay, net_pay)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      (hotel, payroll_date_id, ei_employee, ei_company, cpp_employee, cpp_company, fed_tax, remittance_for_period, employees_paid, gross_pay, net_pay)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `;
     const inserted = await pool.query(q, [
       hotel, payroll_date_id, 
       data.ei_employee, data.ei_company, 
       data.cpp_employee, data.cpp_company, 
-      data.fed_tax, data.employees_paid, 
+      data.fed_tax, data.remittance_for_period, data.employees_paid, 
       data.gross_pay, data.net_pay
     ]);
 
