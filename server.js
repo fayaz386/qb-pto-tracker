@@ -2890,16 +2890,17 @@ app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', m
 
     pd7aRecords.forEach(row => {
       let val;
+      const strRow = row.join(",").toLowerCase();
+
       val = findValueInRow(row, "tax deductions");
-      if (val !== null) data.fed_tax = val;
+      if (val !== null) data.fed_tax += val;
       
       val = findAnyValueInRow(row, [
         ["cpp", "employee"],
         ["canada pension", "employee"],
-        ["c.p.p", "employee"],
-        ["cpp", "employer"] // Sometimes just mislabeled
+        ["c.p.p", "employee"]
       ]);
-      if (val !== null) data.cpp_employee = val;
+      if (val !== null && !strRow.includes("total")) data.cpp_employee += val;
       
       val = findAnyValueInRow(row, [
         ["cpp", "company"],
@@ -2908,13 +2909,13 @@ app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', m
         ["cpp", "employer"],
         ["canada pension", "employer"]
       ]);
-      if (val !== null) data.cpp_company = val;
+      if (val !== null && !strRow.includes("total")) data.cpp_company += val;
       
       val = findAnyValueInRow(row, [
         ["ei", "employee"],
         ["employment insurance", "employee"]
       ]);
-      if (val !== null) data.ei_employee = val;
+      if (val !== null && !strRow.includes("total")) data.ei_employee += val;
       
       val = findAnyValueInRow(row, [
         ["ei", "company"],
@@ -2922,7 +2923,7 @@ app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', m
         ["ei", "employer"],
         ["employment insurance", "employer"]
       ]);
-      if (val !== null) data.ei_company = val;
+      if (val !== null && !strRow.includes("total")) data.ei_company += val;
 
       val = findValueInRow(row, "remittance", "period");
       if (val !== null) data.remittance_for_period = val;
