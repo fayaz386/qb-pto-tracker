@@ -2864,14 +2864,8 @@ app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', m
          let kwIdx = -1;
          for (let i = 0; i < row.length; i++) {
             const cell = String(row[i]).toLowerCase();
-            let cellMatch = true;
-            for (const kw of keywordsLower) {
-                if (!cell.includes(kw)) {
-                    cellMatch = false;
-                    break;
-                }
-            }
-            if (cellMatch) {
+            // Just find the index of the first keyword
+            if (cell.includes(keywordsLower[0])) {
                kwIdx = i;
                break;
             }
@@ -2886,21 +2880,48 @@ app.post("/api/sync-deductions", authMiddleware, upload.fields([{name: 'pd7a', m
       return null;
     };
 
+    const findAnyValueInRow = (row, keywordSets) => {
+      for (const kws of keywordSets) {
+        const val = findValueInRow(row, ...kws);
+        if (val !== null) return val;
+      }
+      return null;
+    };
+
     pd7aRecords.forEach(row => {
       let val;
       val = findValueInRow(row, "tax deductions");
       if (val !== null) data.fed_tax = val;
       
-      val = findValueInRow(row, "cpp", "employee");
+      val = findAnyValueInRow(row, [
+        ["cpp", "employee"],
+        ["canada pension", "employee"],
+        ["c.p.p", "employee"],
+        ["cpp", "employer"] // Sometimes just mislabeled
+      ]);
       if (val !== null) data.cpp_employee = val;
       
-      val = findValueInRow(row, "cpp", "company");
+      val = findAnyValueInRow(row, [
+        ["cpp", "company"],
+        ["canada pension", "company"],
+        ["c.p.p", "company"],
+        ["cpp", "employer"],
+        ["canada pension", "employer"]
+      ]);
       if (val !== null) data.cpp_company = val;
       
-      val = findValueInRow(row, "ei", "employee");
+      val = findAnyValueInRow(row, [
+        ["ei", "employee"],
+        ["employment insurance", "employee"]
+      ]);
       if (val !== null) data.ei_employee = val;
       
-      val = findValueInRow(row, "ei", "company");
+      val = findAnyValueInRow(row, [
+        ["ei", "company"],
+        ["employment insurance", "company"],
+        ["ei", "employer"],
+        ["employment insurance", "employer"]
+      ]);
       if (val !== null) data.ei_company = val;
 
       val = findValueInRow(row, "remittance", "period");
